@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/probablynotvaish/task-management-system/backend/models"
 )
@@ -39,6 +40,8 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	task.ID = len(tasks) + 1 //NOTE: change after connecting to DB
+	task.CreatedAt = time.Now()
+
 	tasks[task.ID] = task
 
 	w.Header().Set("Content-Type", "application/json")
@@ -77,8 +80,8 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func DeleteTask(w http.ResponseWriter, r *http.Request){
-	if r.Method != http.MethodDelete{
+func DeleteTask(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
