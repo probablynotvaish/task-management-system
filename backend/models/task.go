@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type TaskStatus string
@@ -22,12 +24,13 @@ const (
 )
 
 type Task struct {
-	ID          int          `json:"id" gorm:"primaryKey"`
-	Title       string       `json:"title" gorm:"not null;type:varchar(255)"`
-	Description string       `json:"description" gorm:"type:text"`
-	Status      TaskStatus   `json:"status" gorm:"type:varchar(20);default:'pending'"`
-	Priority    TaskPriority `json:"priority" gorm:"type:varchar(20);default:'medium'"`
+	ID bson.ObjectID `bson:"_id,omitempty" json:"id"`
 
-	DueDate   *time.Time `json:"due_date"`
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
+	Title       string       `bson:"title" json:"title"`
+	Description string       `bson:"description" json:"description"`
+	Status      TaskStatus   `bson:"status" json:"status"`
+	Priority    TaskPriority `bson:"priority" json:"priority"`
+
+	DueDate   *time.Time `bson:"due_date,omitempty" json:"due_date"`
+	CreatedAt time.Time  `bson:"created_at" json:"created_at"`
 }
