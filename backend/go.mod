@@ -2,7 +2,12 @@ module github.com/probablynotvaish/task-management-system/backend
 
 go 1.25.0
 
-require go.mongodb.org/mongo-driver/v2 v2.5.0
+require (
+	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/joho/godotenv v1.5.1
+	go.mongodb.org/mongo-driver/v2 v2.5.0
+	golang.org/x/crypto v0.33.0
+)
 
 require (
 	github.com/klauspost/compress v1.17.6 // indirect
