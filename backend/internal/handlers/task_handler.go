@@ -6,21 +6,32 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/probablynotvaish/task-management-system/backend/internal/config"
+	// "github.com/probablynotvaish/task-management-system/backend/internal/config"
+	// "github.com/probablynotvaish/task-management-system/backend/internal/database"
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // var tasks []models.Task
 // var tasks = make(map[int]models.Task)
+type TaskHandler struct {
+	db *mongo.Database
+}
 
-func GetTasks(w http.ResponseWriter, r *http.Request) {
+func NewTaskHandler(db *mongo.Database) *TaskHandler {
+	return &TaskHandler{db: db}
+}
+
+// func GetTasks(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request){
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	collection := config.DB.Collection("tasks")
+	// collection := config.DB.Collection("tasks")
+	collection := h.db.Collection("tasks")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -52,7 +63,7 @@ func GetTasks(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tasks)
 }
 
-func CreateTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	var task models.Task
 	if r.Method != http.MethodPost {
@@ -69,7 +80,8 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	task.CreatedAt = time.Now()
 
-	collection := config.DB.Collection("tasks")
+	// collection := config.DB.Collection("tasks")
+	collection := h.db.Collection("tasks")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -89,7 +101,7 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(task)
 }
 
-func UpdateTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -108,7 +120,8 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collection := config.DB.Collection("tasks")
+	// collection := config.DB.Collection("tasks")
+	collection := h.db.Collection("tasks")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -140,7 +153,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(task)
 }
 
-func DeleteTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -167,7 +180,8 @@ func DeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collection := config.DB.Collection("tasks")
+	// collection := config.DB.Collection("tasks")
+	collection := h.db.Collection("tasks")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

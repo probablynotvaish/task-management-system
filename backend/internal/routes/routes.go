@@ -4,13 +4,18 @@ import (
 	"net/http"
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/handlers"
+	"github.com/probablynotvaish/task-management-system/backend/internal/handler"
 )
 
-func RegisterRoutes() {
+func RegisterRoutes(mux *http.ServeMux, taskHandler *handlers.TaskHandler, authHandler *handler.AuthHandler) {
 
-	http.HandleFunc("/tasks", handlers.GetTasks)
-	http.HandleFunc("/tasks/create", handlers.CreateTask)
-	http.HandleFunc("/tasks/update", handlers.UpdateTask)
-	http.HandleFunc("/tasks/delete", handlers.DeleteTask)
+	// auth routes
+	mux.HandleFunc("POST /api/auth/signup", authHandler.Signup)
+	mux.HandleFunc("POST /api/auth/login", authHandler.Login)
 
+	// task routes
+	mux.HandleFunc("/tasks", taskHandler.GetTasks)
+	mux.HandleFunc("/tasks/create", taskHandler.CreateTask)
+	mux.HandleFunc("/tasks/update", taskHandler.UpdateTask)
+	mux.HandleFunc("/tasks/delete", taskHandler.DeleteTask)
 }
