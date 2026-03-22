@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/probablynotvaish/task-management-system/backend/config"
-	"github.com/probablynotvaish/task-management-system/backend/routes"
+	"github.com/probablynotvaish/task-management-system/backend/internal/config"
+	"github.com/probablynotvaish/task-management-system/backend/internal/routes"
 )
 
 func main() {

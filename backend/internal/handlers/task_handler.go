@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/probablynotvaish/task-management-system/backend/config"
-	"github.com/probablynotvaish/task-management-system/backend/models"
+	"github.com/probablynotvaish/task-management-system/backend/internal/config"
+	"github.com/probablynotvaish/task-management-system/backend/internal/models"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 

@@ -3,7 +3,7 @@ package routes
 import (
 	"net/http"
 
-	"github.com/probablynotvaish/task-management-system/backend/handlers"
+	"github.com/probablynotvaish/task-management-system/backend/internal/handlers"
 )
 
 func RegisterRoutes() {
