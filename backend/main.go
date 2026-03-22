@@ -7,16 +7,13 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/probablynotvaish/task-management-system/backend/internal/config"
 	"github.com/probablynotvaish/task-management-system/backend/internal/database"
 	"github.com/probablynotvaish/task-management-system/backend/internal/handler"
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
+	"github.com/probablynotvaish/task-management-system/backend/internal/routes"
 	"github.com/probablynotvaish/task-management-system/backend/internal/service"
 	"github.com/probablynotvaish/task-management-system/backend/pkg/logger"
-	"fmt"
-	"net/http"
-
-	"github.com/probablynotvaish/task-management-system/backend/internal/config"
-	"github.com/probablynotvaish/task-management-system/backend/internal/routes"
 )
 
 func main() {
@@ -36,6 +33,8 @@ func main() {
 	}
 	defer database.Disconnect(ctx, db)
 
+	config.DB = db
+
 	userRepo := repository.NewMongoUserRepository(db)
 
 	userService := service.NewUserService(userRepo)
@@ -47,6 +46,8 @@ func main() {
 	mux.HandleFunc("POST /api/auth/signup", authHandler.Signup)
 	mux.HandleFunc("POST /api/auth/login", authHandler.Login)
 
+	routes.RegisterRoutes(mux)
+
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
 		port = "8080"
@@ -57,12 +58,4 @@ func main() {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}
-	config.ConnectDB()
-
-	routes.RegisterRoutes()
-
-	fmt.Println("Server running on port 8080")
-
-	http.ListenAndServe(":8080", nil)
 }
-

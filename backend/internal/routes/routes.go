@@ -6,11 +6,11 @@ import (
 	"github.com/probablynotvaish/task-management-system/backend/internal/handlers"
 )
 
-func RegisterRoutes() {
+func RegisterRoutes(mux *http.ServeMux) {
 
-	http.HandleFunc("/tasks", handlers.GetTasks)
-	http.HandleFunc("/tasks/create", handlers.CreateTask)
-	http.HandleFunc("/tasks/update", handlers.UpdateTask)
-	http.HandleFunc("/tasks/delete", handlers.DeleteTask)
+	mux.HandleFunc("/tasks", handlers.GetTasks)
+	mux.HandleFunc("/tasks/create", handlers.CreateTask)
+	mux.HandleFunc("/tasks/update", handlers.UpdateTask)
+	mux.HandleFunc("/tasks/delete", handlers.DeleteTask)
 
 }
