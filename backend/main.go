@@ -12,6 +12,11 @@ import (
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
 	"github.com/probablynotvaish/task-management-system/backend/internal/service"
 	"github.com/probablynotvaish/task-management-system/backend/pkg/logger"
+	"fmt"
+	"net/http"
+
+	"github.com/probablynotvaish/task-management-system/backend/internal/config"
+	"github.com/probablynotvaish/task-management-system/backend/internal/routes"
 )
 
 func main() {
@@ -52,5 +57,12 @@ func main() {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}
+	config.ConnectDB()
+
+	routes.RegisterRoutes()
+
+	fmt.Println("Server running on port 8080")
+
+	http.ListenAndServe(":8080", nil)
 }
 
