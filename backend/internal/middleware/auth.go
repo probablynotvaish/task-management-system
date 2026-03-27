@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -47,7 +47,19 @@ func Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, _ := claims["user_id"].(string)
+		// userID, _ := claims["user_id"].(string)
+		userIDStr, ok := claims["user_id"].(string)
+		if !ok {
+			http.Error(w, `{"error":"user_id missing or invalid"}`, http.StatusUnauthorized)
+			return
+		}
+		
+		userID, err := bson.ObjectIDFromHex(userIDStr)
+		if err != nil {
+			http.Error(w, `{"error":"invalid user_id format"}`, http.StatusUnauthorized)
+			return
+		}
+		
 		email, _ := claims["email"].(string)
 
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
@@ -72,9 +84,9 @@ func parseToken(tokenString string) (*jwt.Token, error) {
 	})
 }
 
-func GetUserID(ctx context.Context) string {
-	userID, _ := ctx.Value(UserIDKey).(string)
-	return userID
+func GetUserID(ctx context.Context) (bson.ObjectID, bool) {
+	userID, ok := ctx.Value(UserIDKey).(bson.ObjectID)
+	return userID, ok
 }
 
 func GetUserEmail(ctx context.Context) string {

@@ -6,19 +6,14 @@ import (
 	"net/http"
 	"os"
 
-	// "fmt"
-
 	"github.com/joho/godotenv"
 	"github.com/probablynotvaish/task-management-system/backend/internal/database"
-	"github.com/probablynotvaish/task-management-system/backend/internal/handler"
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
 	"github.com/probablynotvaish/task-management-system/backend/internal/routes"
 	"github.com/probablynotvaish/task-management-system/backend/internal/service"
 	"github.com/probablynotvaish/task-management-system/backend/pkg/logger"
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/handlers"
-	// "github.com/probablynotvaish/task-management-system/backend/internal/config"
-	// "github.com/probablynotvaish/task-management-system/backend/internal/routes"
 )
 
 func main() {
@@ -41,17 +36,13 @@ func main() {
 
 	userService := service.NewUserService(userRepo)
 
-	authHandler := handler.NewAuthHandler(userService)
+	authHandler := handlers.NewAuthHandler(userService)
 
 	taskHandler := handlers.NewTaskHandler(db)
 
 	mux := http.NewServeMux()
 
 	routes.RegisterRoutes(mux, taskHandler, authHandler)
-	// mux := http.NewServeMux()
-
-	// mux.HandleFunc("POST /api/auth/signup", authHandler.Signup)
-	// mux.HandleFunc("POST /api/auth/login", authHandler.Login)
 
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
@@ -63,11 +54,4 @@ func main() {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}
-	// config.ConnectDB()
-
-	// routes.RegisterRoutes()
-
-	// fmt.Println("Server running on port 8080")
-
-	// http.ListenAndServe(":8080", nil)
 }

@@ -6,15 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	// "github.com/probablynotvaish/task-management-system/backend/internal/config"
-	// "github.com/probablynotvaish/task-management-system/backend/internal/database"
+	"github.com/probablynotvaish/task-management-system/backend/internal/middleware"
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-// var tasks []models.Task
-// var tasks = make(map[int]models.Task)
 type TaskHandler struct {
 	db *mongo.Database
 }
@@ -23,20 +20,28 @@ func NewTaskHandler(db *mongo.Database) *TaskHandler {
 	return &TaskHandler{db: db}
 }
 
-// func GetTasks(w http.ResponseWriter, r *http.Request) {
-func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request){
+func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// collection := config.DB.Collection("tasks")
 	collection := h.db.Collection("tasks")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// defer cancel()
+
+	// cursor, err := collection.Find(ctx, bson.M{})
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	cursor, err := collection.Find(ctx, bson.M{})
+	cursor, err := collection.Find(ctx, bson.M{"user_id": userID})
 	if err != nil {
 		http.Error(w, "Failed to fetch tasks", http.StatusInternalServerError)
 		return
@@ -78,12 +83,19 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	task.UserID = userID
 	task.CreatedAt = time.Now()
 
-	// collection := config.DB.Collection("tasks")
 	collection := h.db.Collection("tasks")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
 	result, err := collection.InsertOne(ctx, task)
@@ -92,7 +104,6 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// set generated ID
 	task.ID = result.InsertedID.(bson.ObjectID)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -120,13 +131,25 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// collection := config.DB.Collection("tasks")
 	collection := h.db.Collection("tasks")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// defer cancel()
+
+	// filter := bson.M{"_id": task.ID}
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"_id": task.ID}
+	filter := bson.M{
+		"_id":     task.ID,
+		"user_id": userID,
+	}
 
 	update := bson.M{
 		"$set": bson.M{
@@ -180,13 +203,25 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// collection := config.DB.Collection("tasks")
 	collection := h.db.Collection("tasks")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// defer cancel()
+
+	// result, err := collection.DeleteOne(ctx, bson.M{"_id": objectID})
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	result, err := collection.DeleteOne(ctx, bson.M{"_id": objectID})
+	result, err := collection.DeleteOne(ctx, bson.M{
+		"_id":     objectID,
+		"user_id": userID,
+	})
 	if err != nil {
 		http.Error(w, "Failed to delete task", http.StatusInternalServerError)
 		return

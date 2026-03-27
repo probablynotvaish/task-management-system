@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	// "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -33,4 +34,5 @@ type Task struct {
 
 	DueDate   *time.Time `bson:"due_date,omitempty" json:"due_date"`
 	CreatedAt time.Time  `bson:"created_at" json:"created_at"`
+	UserID    bson.ObjectID
 }
