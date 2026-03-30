@@ -2,33 +2,45 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"strings"
-	"go.mongodb.org/mongo-driver/v2/bson"
+
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type contextKey string
 
 const (
-	UserIDKey contextKey = "user_id"
+	UserIDKey    contextKey = "user_id"
 	UserEmailKey contextKey = "user_email"
 )
+
+func writeJSONError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"error": message,
+	})
+}
 
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, `{"error":"authorization header is required"}`, http.StatusUnauthorized)
+			writeJSONError(w, http.StatusUnauthorized, "authorization header is required")
+			// http.Error(w, `{"error":"authorization header is required"}`, http.StatusUnauthorized)
 			return
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			http.Error(w, `{"error":"invalid authorization header format"}`, http.StatusUnauthorized)
+			writeJSONError(w, http.StatusUnauthorized, "invalid authorization header format")
+			// http.Error(w, `{"error":"invalid authorization header format"}`, http.StatusUnauthorized)
 			return
 		}
 
@@ -37,29 +49,32 @@ func Auth(next http.Handler) http.Handler {
 		token, err := parseToken(tokenString)
 		if err != nil {
 			slog.Warn("invalid token", "error", err)
-			http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
+			writeJSONError(w, http.StatusUnauthorized, "invalid or expired token")
+			// http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			http.Error(w, `{"error":"invalid token claims"}`, http.StatusUnauthorized)
+			writeJSONError(w, http.StatusUnauthorized, "invalid token claims")
+			// http.Error(w, `{"error":"invalid token claims"}`, http.StatusUnauthorized)
 			return
 		}
 
-		// userID, _ := claims["user_id"].(string)
 		userIDStr, ok := claims["user_id"].(string)
 		if !ok {
-			http.Error(w, `{"error":"user_id missing or invalid"}`, http.StatusUnauthorized)
+			writeJSONError(w, http.StatusUnauthorized, "user_id missing or invalid")
+			// http.Error(w, `{"error":"user_id missing or invalid"}`, http.StatusUnauthorized)
 			return
 		}
-		
+
 		userID, err := bson.ObjectIDFromHex(userIDStr)
 		if err != nil {
-			http.Error(w, `{"error":"invalid user_id format"}`, http.StatusUnauthorized)
+			writeJSONError(w, http.StatusUnauthorized, "invalid user_id format")
+			// http.Error(w, `{"error":"invalid user_id format"}`, http.StatusUnauthorized)
 			return
 		}
-		
+
 		email, _ := claims["email"].(string)
 
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
