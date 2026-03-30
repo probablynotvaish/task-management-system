@@ -44,7 +44,7 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cursor.Close(ctx)
 
-	var tasks []models.Task
+	var tasks = make([]models.Task, 0)
 
 	for cursor.Next(ctx) {
 		var task models.Task

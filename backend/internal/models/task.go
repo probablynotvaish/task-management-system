@@ -32,7 +32,7 @@ type Task struct {
 	Status      TaskStatus   `bson:"status" json:"status"`
 	Priority    TaskPriority `bson:"priority" json:"priority"`
 
-	DueDate   *time.Time `bson:"due_date,omitempty" json:"due_date"`
-	CreatedAt time.Time  `bson:"created_at" json:"created_at"`
-	UserID    bson.ObjectID
+	DueDate   *time.Time    `bson:"due_date,omitempty" json:"due_date"`
+	CreatedAt time.Time     `bson:"created_at" json:"created_at"`
+	UserID    bson.ObjectID `bson:"user_id"`
 }
