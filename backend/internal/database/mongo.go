@@ -21,7 +21,7 @@ func Connect(ctx context.Context) (*mongo.Database, error) {
 		return nil, fmt.Errorf("MONGODB_DATABASE environment variable is not set")
 	}
 
-	slog.Info("connecting to MongoDB", "uri", uri, "database", dbName)
+	slog.Info("connecting to MongoDB", "database", dbName)
 
 	clientOpts := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(clientOpts)
