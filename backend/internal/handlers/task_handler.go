@@ -66,14 +66,15 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
-	var task models.Task
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&task)
-
+	// var task models.Task
+	// err := json.NewDecoder(r.Body).Decode(&task)
+	var payload models.TaskDTO
+	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
@@ -85,8 +86,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task.UserID = userID
-	task.CreatedAt = time.Now()
+	task := payload.ToTask(userID)
 
 	collection := h.db.Collection("tasks")
 
