@@ -33,12 +33,14 @@ func main() {
 	}
 	defer database.Disconnect(ctx, db)
 	userRepo := repository.NewMongoUserRepository(db)
+	taskRepo := repository.NewMongoTaskRepository(db)
 
 	userService := service.NewUserService(userRepo)
+	taskService := service.NewTaskService(taskRepo)
 
 	authHandler := handlers.NewAuthHandler(userService)
 
-	taskHandler := handlers.NewTaskHandler(db)
+	taskHandler := handlers.NewTaskHandler(taskService)
 
 	mux := http.NewServeMux()
 

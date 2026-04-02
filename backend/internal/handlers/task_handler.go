@@ -1,175 +1,118 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
-	"time"
+	"strconv"
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/middleware"
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
+	"github.com/probablynotvaish/task-management-system/backend/internal/service"
 	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type TaskHandler struct {
-	db *mongo.Database
+	service *service.TaskService
 }
 
-func NewTaskHandler(db *mongo.Database) *TaskHandler {
-	return &TaskHandler{db: db}
+func NewTaskHandler(service *service.TaskService) *TaskHandler {
+	return &TaskHandler{service: service}
 }
 
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	collection := h.db.Collection("tasks")
-
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
+	query := r.URL.Query()
 
-	cursor, err := collection.Find(ctx, bson.M{"user_id": userID})
+	page, _ := strconv.Atoi(query.Get("page"))
+	pageSize, _ := strconv.Atoi(query.Get("page_size"))
+
+	sortDir := -1
+	if query.Get("sort_dir") == "asc" {
+		sortDir = 1
+	}
+
+	filter := models.TaskFilter{
+		Status:   models.TaskStatus(query.Get("status")),
+		Priority: models.TaskPriority(query.Get("priority")),
+		Page:     page,
+		PageSize: pageSize,
+		SortBy:   query.Get("sort_by"),
+		SortDir:  sortDir,
+	}
+
+	result, err := h.service.ListTasks(r.Context(), userID, filter)
 	if err != nil {
-		http.Error(w, "Failed to fetch tasks", http.StatusInternalServerError)
-		return
-	}
-	defer cursor.Close(ctx)
-
-	var tasks = make([]models.Task, 0)
-
-	for cursor.Next(ctx) {
-		var task models.Task
-		if err := cursor.Decode(&task); err != nil {
-			http.Error(w, "Error decoding task", http.StatusInternalServerError)
-			return
-		}
-		tasks = append(tasks, task)
-	}
-
-	if err := cursor.Err(); err != nil {
-		http.Error(w, "Cursor error", http.StatusInternalServerError)
+		slog.Error("failed to list tasks", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to fetch tasks"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tasks)
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// var task models.Task
-	// err := json.NewDecoder(r.Body).Decode(&task)
-	var payload models.TaskDTO
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
 
-	task := payload.ToTask(userID)
+	var payload models.TaskDTO
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
 
-	collection := h.db.Collection("tasks")
-
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	result, err := collection.InsertOne(ctx, task)
+	task, err := h.service.CreateTask(r.Context(), userID, payload)
 	if err != nil {
-		http.Error(w, "Failed to create task", http.StatusInternalServerError)
+		slog.Warn("create task failed", "error", err)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
-	task.ID = result.InsertedID.(bson.ObjectID)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	json.NewEncoder(w).Encode(task)
+	writeJSON(w, http.StatusCreated, task)
 }
 
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
 
 	var task models.Task
-
-	err := json.NewDecoder(r.Body).Decode(&task)
-	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
 
-	if task.ID.IsZero() {
-		http.Error(w, "Task ID is required", http.StatusBadRequest)
+	if err := h.service.UpdateTask(r.Context(), userID, &task); err != nil {
+		if err.Error() == "task not found" {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "task not found"})
+			return
+		}
+		if err.Error() == "task ID is required" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		slog.Error("update task failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update task"})
 		return
 	}
 
-	collection := h.db.Collection("tasks")
-
-	userID, ok := middleware.GetUserID(r.Context())
-	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	filter := bson.M{
-		"_id":     task.ID,
-		"user_id": userID,
-	}
-
-	update := bson.M{
-		"$set": bson.M{
-			"title":       task.Title,
-			"description": task.Description,
-			"status":      task.Status,
-			"priority":    task.Priority,
-			"due_date":    task.DueDate,
-		},
-	}
-
-	result, err := collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		http.Error(w, "Failed to update task", http.StatusInternalServerError)
-		return
-	}
-
-	if result.MatchedCount == 0 {
-		http.Error(w, "Task not found", http.StatusNotFound)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(task)
+	writeJSON(w, http.StatusOK, task)
 }
 
 func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
 
@@ -177,50 +120,31 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 		ID string `json:"id"`
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&body)
-	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
 
 	if body.ID == "" {
-		http.Error(w, "Task ID is required", http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "task ID is required"})
 		return
 	}
 
 	objectID, err := bson.ObjectIDFromHex(body.ID)
 	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid ID format"})
 		return
 	}
 
-	collection := h.db.Collection("tasks")
-
-	userID, ok := middleware.GetUserID(r.Context())
-	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+	if err := h.service.DeleteTask(r.Context(), userID, objectID); err != nil {
+		if err.Error() == "task not found" {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "task not found"})
+			return
+		}
+		slog.Error("delete task failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to delete task"})
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	result, err := collection.DeleteOne(ctx, bson.M{
-		"_id":     objectID,
-		"user_id": userID,
-	})
-	if err != nil {
-		http.Error(w, "Failed to delete task", http.StatusInternalServerError)
-		return
-	}
-
-	if result.DeletedCount == 0 {
-		http.Error(w, "Task not found", http.StatusNotFound)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Task deleted successfully",
-	})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "task deleted successfully"})
 }

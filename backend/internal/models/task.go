@@ -54,3 +54,20 @@ func (dto TaskDTO) ToTask(userID bson.ObjectID) Task {
 		UserID:      userID,
 	}
 }
+
+type TaskFilter struct {
+	Status   TaskStatus   `json:"status"`
+	Priority TaskPriority `json:"priority"`
+	Page     int          `json:"page"`
+	PageSize int          `json:"page_size"`
+	SortBy   string       `json:"sort_by"`
+	SortDir  int          `json:"sort_dir"`
+}
+
+type PaginatedResponse struct {
+	Tasks      []Task `json:"tasks"`
+	Total      int64  `json:"total"`
+	Page       int    `json:"page"`
+	PageSize   int    `json:"page_size"`
+	TotalPages int    `json:"total_pages"`
+}
