@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import "./login.css";
 
 function Login() {
@@ -5,7 +6,7 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         
-        <div className="icon-circle">✓</div>
+        <div className="icon-circle">&#10003;</div>
 
         <h2 className="title">Welcome Back</h2>
         <p className="subtitle">
@@ -25,7 +26,7 @@ function Login() {
         <button className="login-btn">Sign In</button>
 
         <p className="signup-text">
-          Don’t have an account? <span>Sign up</span>
+          Don't have an account? <Link to="/register">Sign up</Link>
         </p>
 
       </div>

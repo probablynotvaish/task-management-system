@@ -1,0 +1,108 @@
+/* Full background */
+.register-container {
+  height: 100vh;
+  background-color: #cfd5e1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Card */
+.register-card {
+  background: #e9e6e2;
+  padding: 30px;
+  width: 350px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Top icon */
+.register-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #6a5af9, #7f6cff);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+  font-size: 20px;
+}
+
+/* Title */
+.register-card .title {
+  margin: 10px 0;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* Subtitle */
+.register-card .subtitle {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+/* Form group */
+.register-card .form-group {
+  text-align: left;
+  margin-bottom: 15px;
+}
+
+.register-card .form-group label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Inputs */
+.register-card .form-group input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 6px;
+  border: none;
+  background-color: #6b6600;
+  color: white;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.register-card .form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Button */
+.register-btn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background-color: #05051a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.register-btn:hover {
+  opacity: 0.9;
+}
+
+/* Bottom text */
+.login-text {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #555;
+}
+
+.login-text a {
+  color: blue;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.login-text a:hover {
+  text-decoration: underline;
+}
