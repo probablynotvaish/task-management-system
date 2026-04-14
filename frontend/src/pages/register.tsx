@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import "./register.css";
 
 function Register() {
@@ -7,16 +8,32 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError("");
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
 
-    console.log("Register:", { name, email, password });
+    setLoading(true);
+    try {
+      await axios.post("/api/auth/signup", { name, email, password });
+      navigate("/");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Signup failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,6 +45,8 @@ function Register() {
         <p className="subtitle">
           Sign up to start managing your tasks
         </p>
+
+        {error && <p className="error-message">{error}</p>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -74,8 +93,8 @@ function Register() {
             />
           </div>
 
-          <button type="submit" className="register-btn">
-            Sign Up
+          <button type="submit" className="register-btn" disabled={loading}>
+            {loading ? "Signing up..." : "Sign Up"}
           </button>
         </form>
 

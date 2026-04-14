@@ -90,6 +90,21 @@
   opacity: 0.9;
 }
 
+.register-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Error message */
+.error-message {
+  color: #d32f2f;
+  background: #fde8e8;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
 /* Bottom text */
 .login-text {
   margin-top: 15px;
