@@ -42,9 +42,7 @@ function Register() {
         <div className="register-icon">✦</div>
 
         <h2 className="title">Create Account</h2>
-        <p className="subtitle">
-          Sign up to start managing your tasks
-        </p>
+        <p className="subtitle">Sign up to start managing your tasks</p>
 
         {error && <p className="error-message">{error}</p>}
 
@@ -93,7 +91,12 @@ function Register() {
             />
           </div>
 
-          <button type="submit" className="register-btn" disabled={loading}>
+          <button
+            type="button"
+            className="register-btn"
+            disabled={loading}
+            onClick={handleSubmit}
+          >
             {loading ? "Signing up..." : "Sign Up"}
           </button>
         </form>
