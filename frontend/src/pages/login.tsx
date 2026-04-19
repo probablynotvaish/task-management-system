@@ -81,10 +81,9 @@ function Login() {
           </div>
 
           <button
-            type="button"
+            type="submit"
             className="login-btn"
             disabled={loading}
-            onClick={(e) => handleSubmit(e as any)}
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>

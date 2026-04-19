@@ -12,7 +12,7 @@ function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
@@ -92,10 +92,9 @@ function Register() {
           </div>
 
           <button
-            type="button"
+            type="submit"
             className="register-btn"
             disabled={loading}
-            onClick={handleSubmit}
           >
             {loading ? "Signing up..." : "Sign Up"}
           </button>
