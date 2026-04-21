@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -15,6 +16,7 @@ type UserRepository interface {
 	Create(ctx context.Context, user *models.User) error
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	GetByID(ctx context.Context, id string) (*models.User, error)
+	FindOrCreateByGoogle(ctx context.Context, googleID, email, name string) (*models.User, error)
 }
 
 type MongoUserRepository struct {
@@ -86,5 +88,41 @@ func (r *MongoUserRepository) GetByID(ctx context.Context, id string) (*models.U
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
+	return &user, nil
+}
+
+func (r *MongoUserRepository) FindOrCreateByGoogle(ctx context.Context, googleID, email, name string) (*models.User, error) {
+	now := time.Now().UTC()
+
+	filter := bson.M{"$or": bson.A{
+		bson.M{"google_id": googleID},
+		bson.M{"email": email},
+	}}
+
+	update := bson.M{
+		"$set": bson.M{
+			"google_id":  googleID,
+			"name":       name,
+			"email":      email,
+			"updated_at": now,
+		},
+		"$setOnInsert": bson.M{
+			"password":   "",
+			"created_at": now,
+		},
+	}
+
+	opts := options.FindOneAndUpdate().
+		SetUpsert(true).
+		SetReturnDocument(options.After)
+
+	var user models.User
+	err := r.collection.FindOneAndUpdate(ctx, filter, update, opts).Decode(&user)
+	if err != nil {
+		slog.Error("failed to find or create google user", "email", email, "error", err)
+		return nil, fmt.Errorf("failed to find or create user: %w", err)
+	}
+
+	slog.Info("google user upserted", "id", user.ID.Hex(), "email", email)
 	return &user, nil
 }

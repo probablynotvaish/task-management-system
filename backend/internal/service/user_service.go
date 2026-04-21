@@ -92,6 +92,21 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*AuthR
 	return &AuthResponse{Token: token, User: user}, nil
 }
 
+func (s *UserService) LoginWithGoogle(ctx context.Context, googleID, email, name string) (*AuthResponse, error) {
+	user, err := s.repo.FindOrCreateByGoogle(ctx, googleID, email, name)
+	if err != nil {
+		return nil, fmt.Errorf("google login failed: %w", err)
+	}
+
+	token, err := generateToken(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	slog.Info("user logged in via google", "email", email)
+	return &AuthResponse{Token: token, User: user}, nil
+}
+
 func generateToken(user *models.User) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
