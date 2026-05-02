@@ -68,14 +68,14 @@ const priorityFilterOptions: Array<{
   { label: "Low", value: "low" },
 ];
 
-function getUserEmail() {
+function getStoredEmail(): string {
   try {
     const raw = localStorage.getItem("user");
-    if (!raw) return "user@example.com";
+    if (!raw) return "";
     const parsed = JSON.parse(raw) as { email?: string };
-    return parsed.email || "user@example.com";
+    return parsed.email ?? "";
   } catch {
-    return "user@example.com";
+    return "";
   }
 }
 
@@ -114,6 +114,7 @@ function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [userEmail, setUserEmail] = useState<string>(getStoredEmail);
 
   // ─── Theme ─────────────────────────────────────────────────────────────────
   const [theme, setTheme] = useState<Theme>(
@@ -146,7 +147,7 @@ function Dashboard() {
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // ─── Load tasks ────────────────────────────────────────────────────────────
+  // ─── Load tasks + hydrate user email ──────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -156,6 +157,22 @@ function Dashboard() {
     }
 
     axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+
+    // If the email wasn't persisted (e.g. after OAuth callback), fetch it now.
+    if (!getStoredEmail()) {
+      axios
+        .get<{ id: string; email: string }>("/api/me")
+        .then(({ data }) => {
+          setUserEmail(data.email);
+          localStorage.setItem(
+            "user",
+            JSON.stringify({ id: data.id, email: data.email }),
+          );
+        })
+        .catch(() => {
+          // leave userEmail as empty — the fallback display handles it
+        });
+    }
 
     const loadTasks = async () => {
       try {
@@ -364,7 +381,7 @@ function Dashboard() {
       <header className="dashboard-topbar">
         <div className="dashboard-title-wrap">
           <h1>Task Management</h1>
-          <p>Welcome back, {getUserEmail()}!</p>
+          <p>Welcome back, {userEmail || "there"}!</p>
         </div>
 
         <div className="topbar-actions">

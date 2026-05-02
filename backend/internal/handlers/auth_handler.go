@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/probablynotvaish/task-management-system/backend/internal/middleware"
 	"github.com/probablynotvaish/task-management-system/backend/internal/service"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -66,6 +67,22 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, result)
+}
+
+// GetMe returns the currently authenticated user's basic profile derived
+// from JWT claims. It is used by the OAuth callback to populate localStorage.user
+// without an extra DB query, since user_id and email are already in the token.
+func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "not authenticated"})
+		return
+	}
+	email := middleware.GetUserEmail(r.Context())
+	writeJSON(w, http.StatusOK, map[string]string{
+		"id":    userID.Hex(),
+		"email": email,
+	})
 }
 
 func googleOAuthConfig() *oauth2.Config {

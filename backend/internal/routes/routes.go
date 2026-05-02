@@ -14,6 +14,7 @@ func RegisterRoutes(mux *http.ServeMux, taskHandler *handlers.TaskHandler, authH
 	mux.HandleFunc("POST /api/auth/login", authHandler.Login)
 	mux.HandleFunc("GET /api/auth/google", authHandler.GoogleLogin)
 	mux.HandleFunc("GET /api/auth/google/callback", authHandler.GoogleCallback)
+	mux.Handle("GET /api/me", middleware.Auth(http.HandlerFunc(authHandler.GetMe)))
 
 	// task routes
 	mux.Handle("/api/tasks", middleware.Auth(http.HandlerFunc(taskHandler.GetTasks)))

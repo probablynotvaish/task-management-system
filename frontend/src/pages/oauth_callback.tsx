@@ -2,6 +2,11 @@ import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 
+type MeResponse = {
+  id: string;
+  email: string;
+};
+
 function OAuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -15,10 +20,24 @@ function OAuthCallback() {
       return;
     }
 
+    // Store the token and set default auth header immediately.
     localStorage.setItem("token", token);
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-    navigate("/dashboard", { replace: true });
+    // Fetch the user profile so the dashboard can display the real email.
+    // Even if this fails we still navigate — dashboard has its own fallback.
+    axios
+      .get<MeResponse>("/api/me")
+      .then(({ data }) => {
+        localStorage.setItem("user", JSON.stringify({ id: data.id, email: data.email }));
+      })
+      .catch(() => {
+        // /api/me failed — localStorage.user simply won't be set.
+        // The dashboard's own /api/me fetch will pick it up.
+      })
+      .finally(() => {
+        navigate("/dashboard", { replace: true });
+      });
   }, [navigate, searchParams]);
 
   return (
