@@ -82,28 +82,43 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		writeJSON(w, http.StatusUnauthorized,
+			map[string]string{"error": "unauthorized"})
 		return
 	}
+
+	id := r.PathValue("id")
 
 	var task models.Task
+
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		writeJSON(w, http.StatusBadRequest,
+			map[string]string{"error": "invalid request body"})
 		return
 	}
 
+	objectID, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest,
+			map[string]string{"error": "invalid ID format"})
+		return
+	}
+
+	task.ID = objectID
+
 	if err := h.service.UpdateTask(r.Context(), userID, &task); err != nil {
-		if err.Error() == "task not found" {
+		switch err.Error() {
+		case "task not found":
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "task not found"})
 			return
-		}
-		if err.Error() == "task ID is required" {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		case "task ID is required":
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "task ID is required"})
+			return
+		default:
+			slog.Error("update task failed", "error", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update task"})
 			return
 		}
-		slog.Error("update task failed", "error", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update task"})
-		return
 	}
 
 	writeJSON(w, http.StatusOK, task)
@@ -116,21 +131,13 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body struct {
-		ID string `json:"id"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-
-	if body.ID == "" {
+	id := r.PathValue("id")
+	if id == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "task ID is required"})
 		return
 	}
 
-	objectID, err := bson.ObjectIDFromHex(body.ID)
+	objectID, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid ID format"})
 		return
@@ -141,10 +148,14 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "task not found"})
 			return
 		}
+
 		slog.Error("delete task failed", "error", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to delete task"})
+
+		writeJSON(w, http.StatusInternalServerError,
+			map[string]string{"error": "failed to delete task"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "task deleted successfully"})
+	writeJSON(w, http.StatusOK,
+		map[string]string{"message": "task deleted successfully"})
 }

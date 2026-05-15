@@ -17,8 +17,8 @@ func RegisterRoutes(mux *http.ServeMux, taskHandler *handlers.TaskHandler, authH
 	mux.Handle("GET /api/me", middleware.Auth(http.HandlerFunc(authHandler.GetMe)))
 
 	// task routes
-	mux.Handle("/api/tasks", middleware.Auth(http.HandlerFunc(taskHandler.GetTasks)))
-	mux.Handle("/api/tasks/create", middleware.Auth(http.HandlerFunc(taskHandler.CreateTask)))
-	mux.Handle("/api/tasks/update", middleware.Auth(http.HandlerFunc(taskHandler.UpdateTask)))
-	mux.Handle("/api/tasks/delete", middleware.Auth(http.HandlerFunc(taskHandler.DeleteTask)))
+	mux.Handle("GET /api/tasks", middleware.Auth(http.HandlerFunc(taskHandler.GetTasks)))
+	mux.Handle("POST /api/tasks", middleware.Auth(http.HandlerFunc(taskHandler.CreateTask)))
+	mux.Handle("PATCH /api/tasks/{id}", middleware.Auth(http.HandlerFunc(taskHandler.UpdateTask)))
+	mux.Handle("DELETE /api/tasks/{id}", middleware.Auth(http.HandlerFunc(taskHandler.DeleteTask)))
 }

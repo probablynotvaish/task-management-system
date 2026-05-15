@@ -126,8 +126,7 @@ function Dashboard() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () =>
-    setTheme((t) => (t === "light" ? "dark" : "light"));
+  const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
 
   // Filters
   const [search, setSearch] = useState("");
@@ -146,6 +145,7 @@ function Dashboard() {
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // ─── Load tasks + hydrate user email ──────────────────────────────────────
   useEffect(() => {
@@ -293,9 +293,10 @@ function Dashboard() {
         description: form.description.trim(),
         priority: form.priority,
       };
-      if (form.due_date) payload.due_date = new Date(form.due_date).toISOString();
+      if (form.due_date)
+        payload.due_date = new Date(form.due_date).toISOString();
 
-      const { data: newTask } = await axios.post<Task>("/api/tasks/create", payload);
+      const { data: newTask } = await axios.post<Task>("/api/tasks", payload);
       setTasks((prev) => [newTask, ...prev]);
       setModalOpen(false);
     } catch (err: unknown) {
@@ -316,31 +317,36 @@ function Dashboard() {
   // ─── Update ────────────────────────────────────────────────────────────────
   const handleUpdate = async () => {
     if (!editingTask) return;
+
     if (!form.title.trim()) {
       setFormError("Title is required.");
       return;
     }
+
     setFormLoading(true);
     setFormError("");
+
     try {
       const payload: Record<string, unknown> = {
-        id: editingTask.id,
         title: form.title.trim(),
         description: form.description.trim(),
         priority: form.priority,
         status: form.status,
-        created_at: editingTask.created_at,
       };
+
       if (form.due_date) {
         payload.due_date = new Date(form.due_date).toISOString();
       } else {
         payload.due_date = null;
       }
 
-      const { data: updated } = await axios.post<Task>("/api/tasks/update", payload);
-      setTasks((prev) =>
-        prev.map((t) => (t.id === updated.id ? updated : t)),
+      const { data: updated } = await axios.patch<Task>(
+        `/api/tasks/${editingTask.id}`,
+        payload,
       );
+
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+
       setModalOpen(false);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
@@ -360,15 +366,24 @@ function Dashboard() {
   // ─── Delete ────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!deleteTarget) return;
+
     setDeleteLoading(true);
+    setDeleteError("");
+
     try {
-      await axios.post("/api/tasks/delete", { id: deleteTarget.id });
+      await axios.delete(`/api/tasks/${deleteTarget.id}`);
       setTasks((prev) => prev.filter((t) => t.id !== deleteTarget.id));
       setDeleteTarget(null);
     } catch (err: unknown) {
-      // silently close — could add toast here
-      console.error("Delete failed", err);
-      setDeleteTarget(null);
+      if (axios.isAxiosError(err)) {
+        setDeleteError(
+          typeof err.response?.data?.error === "string"
+            ? err.response.data.error
+            : "Failed to delete task.",
+        );
+      } else {
+        setDeleteError("Failed to delete task.");
+      }
     } finally {
       setDeleteLoading(false);
     }
@@ -390,7 +405,9 @@ function Dashboard() {
             className="theme-toggle-btn"
             onClick={toggleTheme}
             aria-label="Toggle dark mode"
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={
+              theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+            }
           >
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
@@ -580,7 +597,11 @@ function Dashboard() {
                       <button
                         type="button"
                         className="delete-btn"
-                        onClick={() => setDeleteTarget(task)}
+                        // onClick={() => setDeleteTarget(task)}
+                        onClick={() => {
+                          setDeleteError("");
+                          setDeleteTarget(task);
+                        }}
                         aria-label="Delete task"
                       >
                         <span className="icon" aria-hidden="true">
@@ -598,11 +619,13 @@ function Dashboard() {
 
       {/* ── Create / Edit Modal ─────────────────────────────────────────────── */}
       {modalOpen && (
-        <div className="modal-overlay" onClick={closeModal} role="dialog" aria-modal="true">
-          <div
-            className="modal-box"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div
+          className="modal-overlay"
+          onClick={closeModal}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingTask ? "Edit Task" : "New Task"}</h2>
               <button
@@ -691,9 +714,7 @@ function Dashboard() {
                 </div>
               </div>
 
-              {formError && (
-                <p className="form-error">{formError}</p>
-              )}
+              {formError && <p className="form-error">{formError}</p>}
             </div>
 
             <div className="modal-footer">
@@ -745,6 +766,7 @@ function Dashboard() {
                 <strong>"{deleteTarget.title}"</strong>? This action cannot be
                 undone.
               </p>
+              {deleteError && <p className="form-error">{deleteError}</p>}
             </div>
             <div className="modal-footer">
               <button
