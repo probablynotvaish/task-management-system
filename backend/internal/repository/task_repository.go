@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -11,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
+
+var ErrTaskNotFound = errors.New("task not found")
 
 type TaskRepository interface {
 	List(ctx context.Context, userID bson.ObjectID, filter models.TaskFilter) (*models.PaginatedResponse, error)
@@ -163,7 +166,7 @@ func (r *MongoTaskRepository) Update(ctx context.Context, userID bson.ObjectID, 
 	}
 
 	if result.MatchedCount == 0 {
-		return fmt.Errorf("task not found")
+		return ErrTaskNotFound
 	}
 
 	slog.Info("task updated", "id", task.ID.Hex())
@@ -183,7 +186,7 @@ func (r *MongoTaskRepository) Delete(ctx context.Context, userID bson.ObjectID, 
 	}
 
 	if result.DeletedCount == 0 {
-		return fmt.Errorf("task not found")
+		return ErrTaskNotFound
 	}
 
 	slog.Info("task deleted", "id", taskID.Hex())
@@ -199,7 +202,7 @@ func (r *MongoTaskRepository) GetByID(ctx context.Context, userID bson.ObjectID,
 	var task models.Task
 	if err := r.collection.FindOne(ctx, filter).Decode(&task); err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("task not found")
+			return nil, ErrTaskNotFound
 		}
 		slog.Error("failed to get task", "error", err)
 		return nil, fmt.Errorf("failed to get task: %w", err)

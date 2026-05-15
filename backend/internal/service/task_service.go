@@ -2,12 +2,18 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
 	"go.mongodb.org/mongo-driver/v2/bson"
+)
+
+var (
+	ErrTitleRequired  = errors.New("title is required")
+	ErrTaskIDRequired  = errors.New("task ID is required")
+	ErrTaskNotFound = errors.New("task not found")
 )
 
 type TaskService struct {
@@ -49,7 +55,7 @@ func (s *TaskService) ListTasks(ctx context.Context, userID bson.ObjectID, filte
 
 func (s *TaskService) CreateTask(ctx context.Context, userID bson.ObjectID, dto models.TaskDTO) (*models.Task, error) {
 	if dto.Title == "" {
-		return nil, fmt.Errorf("title is required")
+		return nil, ErrTitleRequired
 	}
 
 	task := dto.ToTask(userID)
@@ -64,7 +70,7 @@ func (s *TaskService) CreateTask(ctx context.Context, userID bson.ObjectID, dto 
 
 func (s *TaskService) UpdateTask(ctx context.Context, userID bson.ObjectID, task *models.Task) error {
 	if task.ID.IsZero() {
-		return fmt.Errorf("task ID is required")
+		return ErrTaskIDRequired
 	}
 
 	return s.repo.Update(ctx, userID, task)

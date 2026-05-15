@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"github.com/probablynotvaish/task-management-system/backend/internal/middleware"
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
 	"github.com/probablynotvaish/task-management-system/backend/internal/service"
+	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -107,12 +109,12 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	task.ID = objectID
 
 	if err := h.service.UpdateTask(r.Context(), userID, &task); err != nil {
-		switch err.Error() {
-		case "task not found":
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "task not found"})
-			return
-		case "task ID is required":
+		switch {
+		case errors.Is(err, service.ErrTaskIDRequired):
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "task ID is required"})
+			return
+		case errors.Is(err, repository.ErrTaskNotFound):
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "task not found"})
 			return
 		default:
 			slog.Error("update task failed", "error", err)
@@ -144,7 +146,7 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteTask(r.Context(), userID, objectID); err != nil {
-		if err.Error() == "task not found" {
+		if errors.Is(err, repository.ErrTaskNotFound) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "task not found"})
 			return
 		}
