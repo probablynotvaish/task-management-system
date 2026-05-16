@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getApiErrorMessage } from "../utils/apiError";
 import axios from "axios";
 import "./dashboard.css";
 
@@ -190,15 +191,7 @@ function Dashboard() {
 
         setTasks(data.tasks ?? []);
       } catch (err: unknown) {
-        if (axios.isAxiosError(err)) {
-          const message =
-            typeof err.response?.data?.error === "string"
-              ? err.response.data.error
-              : "Failed to load tasks.";
-          setError(message);
-        } else {
-          setError("Failed to load tasks.");
-        }
+        setError(getApiErrorMessage(err, "Failed to load tasks."));
       } finally {
         setLoading(false);
       }
@@ -300,15 +293,7 @@ function Dashboard() {
       setTasks((prev) => [newTask, ...prev]);
       setModalOpen(false);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setFormError(
-          typeof err.response?.data?.error === "string"
-            ? err.response.data.error
-            : "Failed to create task.",
-        );
-      } else {
-        setFormError("Failed to create task.");
-      }
+      setFormError(getApiErrorMessage(err, "Failed to create task."));
     } finally {
       setFormLoading(false);
     }
@@ -349,15 +334,7 @@ function Dashboard() {
 
       setModalOpen(false);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setFormError(
-          typeof err.response?.data?.error === "string"
-            ? err.response.data.error
-            : "Failed to update task.",
-        );
-      } else {
-        setFormError("Failed to update task.");
-      }
+      setFormError(getApiErrorMessage(err, "Failed to update task."));
     } finally {
       setFormLoading(false);
     }
@@ -375,15 +352,7 @@ function Dashboard() {
       setTasks((prev) => prev.filter((t) => t.id !== deleteTarget.id));
       setDeleteTarget(null);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setDeleteError(
-          typeof err.response?.data?.error === "string"
-            ? err.response.data.error
-            : "Failed to delete task.",
-        );
-      } else {
-        setDeleteError("Failed to delete task.");
-      }
+      setDeleteError(getApiErrorMessage(err, "Failed to delete task."));
     } finally {
       setDeleteLoading(false);
     }
