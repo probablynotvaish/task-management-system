@@ -14,6 +14,10 @@ func RegisterRoutes(mux *http.ServeMux, taskHandler *handlers.TaskHandler, authH
 	mux.HandleFunc("POST /api/auth/login", authHandler.Login)
 	mux.HandleFunc("GET /api/auth/google", authHandler.GoogleLogin)
 	mux.HandleFunc("GET /api/auth/google/callback", authHandler.GoogleCallback)
+	// Redeems the short-lived opaque code issued by GoogleCallback for the real
+	// JWT. The code is single-use and expires in 60 s. No auth middleware needed
+	// because the caller is unauthenticated at this point.
+	mux.HandleFunc("POST /api/auth/token", authHandler.TokenExchange)
 	mux.Handle("GET /api/me", middleware.Auth(http.HandlerFunc(authHandler.GetMe)))
 
 	// task routes

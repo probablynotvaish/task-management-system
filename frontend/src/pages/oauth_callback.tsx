@@ -7,33 +7,53 @@ type MeResponse = {
   email: string;
 };
 
+type TokenExchangeResponse = {
+  token: string;
+};
+
 function OAuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const token = searchParams.get("token");
+    const code = searchParams.get("code");
     const error = searchParams.get("error");
 
-    if (error || !token) {
+    if (error || !code) {
       navigate(`/?oauth_error=${error ?? "unknown"}`, { replace: true });
       return;
     }
 
-    // Store the token and set default auth header immediately.
-    localStorage.setItem("token", token);
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-    // Fetch the user profile so the dashboard can display the real email.
-    // Even if this fails we still navigate — dashboard has its own fallback.
+    // Exchange the short-lived opaque code for the real JWT.
+    // The JWT is received only in the response body — it never appears in any
+    // URL, preventing leakage through gateway logs, Referer headers, and
+    // browser history.
     axios
-      .get<MeResponse>("/api/me")
+      .post<TokenExchangeResponse>("/api/auth/token", { code })
       .then(({ data }) => {
-        localStorage.setItem("user", JSON.stringify({ id: data.id, email: data.email }));
+        const token = data.token;
+        localStorage.setItem("token", token);
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+        // Fetch the user profile so the dashboard can display the real email.
+        // Even if this fails we still navigate — dashboard has its own fallback.
+        return axios
+          .get<MeResponse>("/api/me")
+          .then(({ data: me }) => {
+            localStorage.setItem(
+              "user",
+              JSON.stringify({ id: me.id, email: me.email })
+            );
+          })
+          .catch(() => {
+            // /api/me failed — localStorage.user simply won't be set.
+            // The dashboard's own /api/me fetch will pick it up.
+          });
       })
       .catch(() => {
-        // /api/me failed — localStorage.user simply won't be set.
-        // The dashboard's own /api/me fetch will pick it up.
+        // Code invalid, expired, or already used — send the user back to login.
+        navigate("/?oauth_error=exchange_failed", { replace: true });
+        return;
       })
       .finally(() => {
         navigate("/dashboard", { replace: true });

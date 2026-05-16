@@ -181,8 +181,43 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s", frontendURL, result.Token)
+	// Store the JWT in-memory and send only an opaque, short-lived exchange
+	// code in the redirect URL. The JWT itself never appears in any URL,
+	// preventing leakage through gateway logs, Referer headers, or browser
+	// history. The frontend redeems the code via POST /api/auth/token.
+	exchangeCode, err := exchangeStore.put(result.Token)
+	if err != nil {
+		slog.Error("failed to generate token exchange code", "error", err)
+		http.Redirect(w, r, frontendURL+"/?error=internal", http.StatusTemporaryRedirect)
+		return
+	}
+	redirectURL := fmt.Sprintf("%s/auth/callback?code=%s", frontendURL, exchangeCode)
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+}
+
+// TokenExchange redeems a short-lived opaque code (issued by GoogleCallback)
+// for the real JWT. The code is single-use and expires after 60 seconds.
+//
+// POST /api/auth/token
+// Body: { "code": "<opaque code>" }
+// Response: { "token": "<JWT>" }  |  { "error": "..." } on failure
+func (h *AuthHandler) TokenExchange(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Code == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing or invalid code"})
+		return
+	}
+
+	jwt, ok := exchangeStore.redeem(body.Code)
+	if !ok {
+		// Code unknown, already used, or expired.
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired code"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"token": jwt})
 }
 
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {
