@@ -86,10 +86,14 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func googleOAuthConfig() *oauth2.Config {
+	redirectURL := os.Getenv("GOOGLE_REDIRECT_URL")
+	if redirectURL == "" {
+		redirectURL = "http://localhost:8080/api/auth/google/callback"
+	}
 	return &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		RedirectURL:  "http://localhost:8080/api/auth/google/callback",
+		RedirectURL:  redirectURL,
 		Scopes:       []string{"openid", "email", "profile"},
 		Endpoint:     google.Endpoint,
 	}
