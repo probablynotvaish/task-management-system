@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { createTask, deleteTask, fetchTasks, updateTask } from "../api/tasks";
+import {
+  createTask,
+  deleteTask,
+  fetchTasks,
+  updateTask,
+  type FetchTasksParams,
+} from "../api/tasks";
 import { fetchCurrentUser } from "../api/user";
 import { getApiErrorMessage } from "../utils/apiError";
 import {
   defaultTaskForm,
+  type PaginatedTasksResponse,
   type Task,
   type TaskFormData,
 } from "../types/task";
@@ -27,8 +34,17 @@ function toDateInputValue(dateString?: string | null) {
   return d.toISOString().slice(0, 10);
 }
 
-export function useDashboard() {
+type PaginationState = Omit<PaginatedTasksResponse, "tasks">;
+
+export function useDashboard(query: FetchTasksParams) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    total: 0,
+    page: query.page ?? 1,
+    page_size: query.page_size ?? 10,
+    total_pages: 1,
+  });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -49,14 +65,28 @@ export function useDashboard() {
     setError("");
 
     try {
-      const data = await fetchTasks();
+      const data = await fetchTasks(query);
       setTasks(data.tasks ?? []);
+      setPagination({
+        total: data.total ?? 0,
+        page: data.page ?? query.page ?? 1,
+        page_size: data.page_size ?? query.page_size ?? 10,
+        total_pages: data.total_pages ?? 1,
+      });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, "Failed to load tasks."));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [
+    query.page,
+    query.page_size,
+    query.status,
+    query.priority,
+    query.search,
+    query.sort_by,
+    query.sort_dir,
+  ]);
 
   useEffect(() => {
     void loadTasks();
@@ -74,7 +104,7 @@ export function useDashboard() {
         );
       })
       .catch(() => {
-        // ignore; the page already has a fallback display
+        // ignore; fallback display is fine
       });
   }, []);
 
@@ -125,26 +155,23 @@ export function useDashboard() {
 
     try {
       if (editingTask) {
-        const updated = await updateTask(editingTask.id, {
+        await updateTask(editingTask.id, {
           title: form.title.trim(),
           description: form.description.trim(),
           priority: form.priority,
           status: form.status,
           due_date: form.due_date ? new Date(form.due_date).toISOString() : null,
         });
-
-        setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       } else {
-        const created = await createTask({
+        await createTask({
           title: form.title.trim(),
           description: form.description.trim(),
           priority: form.priority,
           due_date: form.due_date ? new Date(form.due_date).toISOString() : undefined,
         });
-
-        setTasks((prev) => [created, ...prev]);
       }
 
+      await loadTasks();
       setModalOpen(false);
       setEditingTask(null);
       setForm(defaultTaskForm);
@@ -179,7 +206,7 @@ export function useDashboard() {
 
     try {
       await deleteTask(deleteTarget.id);
-      setTasks((prev) => prev.filter((t) => t.id !== deleteTarget.id));
+      await loadTasks();
       setDeleteTarget(null);
     } catch (err: unknown) {
       setDeleteError(getApiErrorMessage(err, "Failed to delete task."));
@@ -190,6 +217,7 @@ export function useDashboard() {
 
   return {
     tasks,
+    pagination,
     loading,
     error,
     userEmail,
@@ -213,5 +241,6 @@ export function useDashboard() {
     promptDelete,
     cancelDelete,
     confirmDelete,
+    refreshTasks: loadTasks,
   };
 }

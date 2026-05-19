@@ -68,8 +68,26 @@ function Dashboard() {
     "all",
   );
 
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, priorityFilter]);
+
+  const taskQuery = {
+    page,
+    page_size: pageSize,
+    search: search.trim() || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter,
+    priority: priorityFilter === "all" ? undefined : priorityFilter,
+    sort_by: "created_at",
+    sort_dir: "desc" as const,
+  };
+
   const {
     tasks,
+    pagination,
     loading,
     error,
     userEmail,
@@ -89,7 +107,7 @@ function Dashboard() {
     promptDelete,
     cancelDelete,
     confirmDelete,
-  } = useDashboard();
+  } = useDashboard(taskQuery);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -114,33 +132,14 @@ function Dashboard() {
     navigate("/", { replace: true });
   };
 
-  const filteredTasks = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return tasks.filter((task) => {
-      const matchesSearch =
-        !query ||
-        task.title.toLowerCase().includes(query) ||
-        task.description.toLowerCase().includes(query);
-
-      const matchesStatus =
-        statusFilter === "all" || task.status === statusFilter;
-
-      const matchesPriority =
-        priorityFilter === "all" || task.priority === priorityFilter;
-
-      return matchesSearch && matchesStatus && matchesPriority;
-    });
-  }, [tasks, search, statusFilter, priorityFilter]);
-
   const counts = useMemo(() => {
     return {
-      total: tasks.length,
+      total: pagination.total,
       pending: tasks.filter((task) => task.status === "to_do").length,
       inProgress: tasks.filter((task) => task.status === "in_progress").length,
       completed: tasks.filter((task) => task.status === "completed").length,
     };
-  }, [tasks]);
+  }, [tasks, pagination.total]);
 
   return (
     <div className="dashboard-page">
@@ -293,76 +292,102 @@ function Dashboard() {
         )}
 
         {!loading && !error && (
-          <section className="task-grid">
-            {filteredTasks.length === 0 ? (
-              <div className="state-box">No tasks found.</div>
-            ) : (
-              filteredTasks.map((task) => {
-                const overdue = isOverdue(task.due_date);
+          <>
+            <section className="task-grid">
+              {tasks.length === 0 ? (
+                <div className="state-box">No tasks found.</div>
+              ) : (
+                tasks.map((task) => {
+                  const overdue = isOverdue(task.due_date);
 
-                return (
-                  <article key={task.id} className="task-card">
-                    <div className="task-card-header">
-                      <h3>{task.title}</h3>
+                  return (
+                    <article key={task.id} className="task-card">
+                      <div className="task-card-header">
+                        <h3>{task.title}</h3>
 
-                      <span
-                        className={`flag flag-${task.priority}`}
-                        aria-hidden="true"
-                      >
-                        ⚑
-                      </span>
-                    </div>
-
-                    <p className="task-desc">{task.description}</p>
-
-                    <div className="task-badges">
-                      <span className={`status-pill status-${task.status}`}>
-                        {statusLabel[task.status]}
-                      </span>
-                      <span className="priority-pill">
-                        {task.priority.charAt(0).toUpperCase() +
-                          task.priority.slice(1)}
-                      </span>
-                    </div>
-
-                    <div className={`due-date ${overdue ? "due-overdue" : ""}`}>
-                      <span className="icon icon-calendar" aria-hidden="true">
-                        📅
-                      </span>
-                      <span>
-                        {formatDate(task.due_date)}
-                        {overdue ? " (Overdue)" : ""}
-                      </span>
-                    </div>
-
-                    <div className="task-actions">
-                      <button
-                        type="button"
-                        className="edit-btn"
-                        onClick={() => openEditModal(task)}
-                      >
-                        <span className="icon" aria-hidden="true">
-                          ✎
+                        <span
+                          className={`flag flag-${task.priority}`}
+                          aria-hidden="true"
+                        >
+                          ⚑
                         </span>
-                        Edit
-                      </button>
+                      </div>
 
-                      <button
-                        type="button"
-                        className="delete-btn"
-                        onClick={() => promptDelete(task)}
-                        aria-label="Delete task"
-                      >
-                        <span className="icon" aria-hidden="true">
-                          🗑
+                      <p className="task-desc">{task.description}</p>
+
+                      <div className="task-badges">
+                        <span className={`status-pill status-${task.status}`}>
+                          {statusLabel[task.status]}
                         </span>
-                      </button>
-                    </div>
-                  </article>
-                );
-              })
-            )}
-          </section>
+                        <span className="priority-pill">
+                          {task.priority.charAt(0).toUpperCase() +
+                            task.priority.slice(1)}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`due-date ${overdue ? "due-overdue" : ""}`}
+                      >
+                        <span className="icon icon-calendar" aria-hidden="true">
+                          📅
+                        </span>
+                        <span>
+                          {formatDate(task.due_date)}
+                          {overdue ? " (Overdue)" : ""}
+                        </span>
+                      </div>
+
+                      <div className="task-actions">
+                        <button
+                          type="button"
+                          className="edit-btn"
+                          onClick={() => openEditModal(task)}
+                        >
+                          <span className="icon" aria-hidden="true">
+                            ✎
+                          </span>
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          className="delete-btn"
+                          onClick={() => promptDelete(task)}
+                          aria-label="Delete task"
+                        >
+                          <span className="icon" aria-hidden="true">
+                            🗑
+                          </span>
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
+            </section>
+
+            <div className="pagination-controls">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1 || loading}
+              >
+                Previous
+              </button>
+
+              <span>
+                Page {page} of {pagination.total_pages || 1}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={loading || page >= (pagination.total_pages || 1)}
+              >
+                Next
+              </button>
+            </div>
+          </>
         )}
       </main>
 

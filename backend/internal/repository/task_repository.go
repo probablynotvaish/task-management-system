@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"regexp"
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -79,6 +80,13 @@ func (r *MongoTaskRepository) List(ctx context.Context, userID bson.ObjectID, fi
 	}
 	if filter.Priority != "" {
 		query["priority"] = filter.Priority
+	}
+	if filter.Search != "" {
+		escaped := regexp.QuoteMeta(filter.Search)
+		query["$or"] = bson.A{
+			bson.M{"title": bson.M{"$regex": escaped, "$options": "i"}},
+			bson.M{"description": bson.M{"$regex": escaped, "$options": "i"}},
+		}
 	}
 
 	total, err := r.collection.CountDocuments(ctx, query)

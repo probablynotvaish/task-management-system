@@ -58,6 +58,7 @@ func (dto TaskDTO) ToTask(userID bson.ObjectID) Task {
 type TaskFilter struct {
 	Status   TaskStatus   `json:"status"`
 	Priority TaskPriority `json:"priority"`
+	Search   string       `json:"search"`
 	Page     int          `json:"page"`
 	PageSize int          `json:"page_size"`
 	SortBy   string       `json:"sort_by"`

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/middleware"
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
@@ -42,6 +43,7 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	filter := models.TaskFilter{
 		Status:   models.TaskStatus(query.Get("status")),
 		Priority: models.TaskPriority(query.Get("priority")),
+		Search:   strings.TrimSpace(query.Get("search")),
 		Page:     page,
 		PageSize: pageSize,
 		SortBy:   query.Get("sort_by"),
