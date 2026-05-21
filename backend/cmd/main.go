@@ -53,8 +53,9 @@ func main() {
 
 	c := cors.New(cors.Options{
 	AllowedOrigins: []string{
-		"http://localhost:5173",
+		// "http://localhost:5173",
 		// "https://your-frontend.vercel.app",
+		"https://task-management-system-sigma-roan.vercel.app/",
 	},
 	AllowedMethods: []string{
 		"GET",
