@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-
+	"github.com/rs/cors"
 	"github.com/joho/godotenv"
 	"github.com/probablynotvaish/task-management-system/backend/internal/database"
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
@@ -46,14 +46,33 @@ func main() {
 
 	routes.RegisterRoutes(mux, taskHandler, authHandler)
 
-	port := os.Getenv("SERVER_PORT")
+	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	slog.Info("server listening", "port", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		slog.Error("server failed", "error", err)
-		os.Exit(1)
-	}
+	c := cors.New(cors.Options{
+	AllowedOrigins: []string{
+		"http://localhost:5173",
+		// "https://your-frontend.vercel.app",
+	},
+	AllowedMethods: []string{
+		"GET",
+		"POST",
+		"PUT",
+		"DELETE",
+		"OPTIONS",
+	},
+	AllowedHeaders: []string{"*"},
+	AllowCredentials: true,
+})
+
+handler := c.Handler(mux)
+
+slog.Info("server listening", "port", port)
+
+if err := http.ListenAndServe(":"+port, handler); err != nil {
+	slog.Error("server failed", "error", err)
+	os.Exit(1)
+}
 }
