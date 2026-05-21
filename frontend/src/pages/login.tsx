@@ -54,8 +54,8 @@ function Login() {
   };
 
   const handleGoogleLogin = () => {
-  window.location.href = `${API_BASE_URL}/api/auth/google`;
-
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
+  };
   return (
     <div className="login-container">
       <div className="login-card">
