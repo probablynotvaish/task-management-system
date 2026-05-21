@@ -35,7 +35,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const { data } = await axios.post<LoginResponse>("/api/auth/login", {
+      const { data } = await axios.post<LoginResponse>("https://task-management-system-yj5o.onrender.com/api/auth/login", {
         email,
         password,
       });
@@ -54,7 +54,7 @@ function Login() {
 
   const handleGoogleLogin = () => {
     // Navigate directly to the backend OAuth initiation endpoint.
-    window.location.href = "/api/auth/google";
+    window.location.href = "https://task-management-system-yj5o.onrender.com/api/auth/google";
   };
 
   return (
