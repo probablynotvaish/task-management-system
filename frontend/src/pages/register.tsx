@@ -33,7 +33,7 @@ function Register() {
 
     setLoading(true);
     try {
-      await axios.post("/api/auth/signup", { name, email, password });
+      await axios.post("https://task-management-system-yj5o.onrender.com/api/auth/signup", { name, email, password });
       navigate("/");
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, "Signup failed. Please try again."));
