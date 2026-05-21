@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getApiErrorMessage } from "../utils/apiError";
+import { api, API_BASE_URL } from "../api/client";
 import axios from "axios";
 import "./register.css";
 
@@ -33,7 +34,7 @@ function Register() {
 
     setLoading(true);
     try {
-      await axios.post("https://task-management-system-yj5o.onrender.com/api/auth/signup", { name, email, password });
+      await api.post("/api/auth/signup", { name, email, password });
       navigate("/");
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, "Signup failed. Please try again."));
@@ -43,7 +44,7 @@ function Register() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "/api/auth/google";
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
   return (

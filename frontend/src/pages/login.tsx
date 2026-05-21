@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getApiErrorMessage } from "../utils/apiError";
 import axios from "axios";
+import { api, API_BASE_URL } from "../api/client";
 import "./login.css";
 
 type LoginResponse = {
@@ -35,7 +36,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const { data } = await axios.post<LoginResponse>("https://task-management-system-yj5o.onrender.com/api/auth/login", {
+      const { data } = await api.post<LoginResponse>("/api/auth/login", {
         email,
         password,
       });
@@ -53,9 +54,7 @@ function Login() {
   };
 
   const handleGoogleLogin = () => {
-    // Navigate directly to the backend OAuth initiation endpoint.
-    window.location.href = "https://task-management-system-yj5o.onrender.com/api/auth/google";
-  };
+  window.location.href = `${API_BASE_URL}/api/auth/google`;
 
   return (
     <div className="login-container">
