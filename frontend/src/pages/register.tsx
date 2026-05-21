@@ -2,7 +2,6 @@ import { useState, useEffect, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getApiErrorMessage } from "../utils/apiError";
 import { api, API_BASE_URL } from "../api/client";
-import axios from "axios";
 import "./register.css";
 
 function Register() {

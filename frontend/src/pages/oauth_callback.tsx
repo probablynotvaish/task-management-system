@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
-import axios from "axios";
 
 type MeResponse = {
   id: string;
