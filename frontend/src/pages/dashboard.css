@@ -477,6 +477,20 @@ body {
   .task-grid,
   .toolbar-card { grid-template-columns: 1fr; }
   .task-card-header h3 { max-width: 100%; }
+  .pagination-controls {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.pagination-btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.pagination-status {
+  order: -1;
+  width: 100%;
+}
 }
 
 /* ─── Modal ──────────────────────────────────────────────────────────────────── */
@@ -685,4 +699,56 @@ body {
   background: var(--bg-muted);
   color: var(--text-primary);
   border-color: var(--border);
+}
+
+.pagination-controls {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.pagination-btn {
+  height: 40px;
+  min-width: 120px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--bg-muted);
+  transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pagination-status {
+  min-width: 110px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
 }

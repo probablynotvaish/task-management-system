@@ -366,7 +366,7 @@ function Dashboard() {
               )}
             </section>
 
-            <div className="pagination-controls">
+            {/* <div className="pagination-controls">
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -385,6 +385,29 @@ function Dashboard() {
                 disabled={loading || page >= (pagination.total_pages || 1)}
               >
                 Next
+              </button>
+            </div> */}
+            <div className="pagination-controls">
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1 || loading}
+              >
+                ← Previous
+              </button>
+
+              <span className="pagination-status">
+                Page {page} of {pagination.total_pages || 1}
+              </span>
+
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={loading || page >= (pagination.total_pages || 1)}
+              >
+                Next →
               </button>
             </div>
           </>
