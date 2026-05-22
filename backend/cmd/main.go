@@ -5,16 +5,33 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"github.com/rs/cors"
+	"strings"
+
 	"github.com/joho/godotenv"
 	"github.com/probablynotvaish/task-management-system/backend/internal/database"
+	"github.com/probablynotvaish/task-management-system/backend/internal/handlers"
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
 	"github.com/probablynotvaish/task-management-system/backend/internal/routes"
 	"github.com/probablynotvaish/task-management-system/backend/internal/service"
 	"github.com/probablynotvaish/task-management-system/backend/pkg/logger"
-
-	"github.com/probablynotvaish/task-management-system/backend/internal/handlers"
+	"github.com/rs/cors"
 )
+
+// allowedOrigins returns the list of permitted CORS origins.
+// Read from ALLOWED_ORIGINS (comma-separated). Falls back to localhost for dev.
+func allowedOrigins() []string {
+	raw := os.Getenv("ALLOWED_ORIGINS")
+	if raw == "" {
+		return []string{"http://localhost:5173"}
+	}
+	origins := []string{}
+	for _, o := range strings.Split(raw, ",") {
+		if trimmed := strings.TrimSpace(o); trimmed != "" {
+			origins = append(origins, trimmed)
+		}
+	}
+	return origins
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -32,6 +49,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer database.Disconnect(ctx, db)
+
 	userRepo := repository.NewMongoUserRepository(db)
 	taskRepo := repository.NewMongoTaskRepository(db)
 
@@ -39,39 +57,41 @@ func main() {
 	taskService := service.NewTaskService(taskRepo)
 
 	authHandler := handlers.NewAuthHandler(userService)
-
 	taskHandler := handlers.NewTaskHandler(taskService)
 
 	mux := http.NewServeMux()
-
 	routes.RegisterRoutes(mux, taskHandler, authHandler)
+
+	origins := allowedOrigins()
+	slog.Info("CORS allowed origins", "origins", origins)
+
+	c := cors.New(cors.Options{
+		AllowedOrigins: origins,
+		AllowedMethods: []string{
+			"GET",
+			"POST",
+			"PUT",
+			"PATCH",
+			"DELETE",
+			"OPTIONS",
+		},
+		// Explicit list required when AllowCredentials is true;
+		// a bare "*" is silently ignored by most browsers in that case.
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "Accept"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(mux)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	c := cors.New(cors.Options{
-	AllowedOrigins: []string{
-		"https://task-management-system-sigma-roan.vercel.app",
-	},
-	AllowedMethods: []string{
-		"GET",
-		"POST",
-		"PUT",
-		"DELETE",
-		"OPTIONS",
-	},
-	AllowedHeaders: []string{"*"},
-	AllowCredentials: true,
-})
+	slog.Info("server listening", "port", port)
 
-handler := c.Handler(mux)
-
-slog.Info("server listening", "port", port)
-
-if err := http.ListenAndServe(":"+port, handler); err != nil {
-	slog.Error("server failed", "error", err)
-	os.Exit(1)
-}
-}
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
+		slog.Error("server failed", "error", err)
+		os.Exit(1)
+	}
+}
