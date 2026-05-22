@@ -11,7 +11,7 @@ type Theme = "light" | "dark";
 
 const statusFilterOptions: Array<{ label: string; value: "all" | TaskStatus }> =
   [
-    { label: "All Statuses", value: "all" },
+    { label: "Status", value: "all" },
     { label: "Pending", value: "to_do" },
     { label: "In Progress", value: "in_progress" },
     { label: "Completed", value: "completed" },
@@ -22,7 +22,7 @@ const priorityFilterOptions: Array<{
   label: string;
   value: "all" | TaskPriority;
 }> = [
-  { label: "All Priorities", value: "all" },
+  { label: "Priorities", value: "all" },
   { label: "High", value: "high" },
   { label: "Medium", value: "medium" },
   { label: "Low", value: "low" },

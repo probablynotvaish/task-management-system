@@ -143,7 +143,7 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	stateCookie, err := r.Cookie("oauth_state")
 	if err != nil || stateCookie.Value != r.URL.Query().Get("state") {
 		slog.Warn("oauth state mismatch")
-		http.Redirect(w, r, frontendURL+"/?error=invalid_state", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, frontendURL+"/?oauth_error=invalid_state", http.StatusTemporaryRedirect)
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: "oauth_state", MaxAge: -1, Path: "/"})
@@ -151,14 +151,14 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	if code == "" {
 		slog.Warn("oauth callback missing code")
-		http.Redirect(w, r, frontendURL+"/?error=missing_code", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, frontendURL+"/?oauth_error=missing_code", http.StatusTemporaryRedirect)
 		return
 	}
 
 	oauthToken, err := googleOAuthConfig().Exchange(context.Background(), code)
 	if err != nil {
 		slog.Error("failed to exchange oauth code", "error", err)
-		http.Redirect(w, r, frontendURL+"/?error=token_exchange_failed", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, frontendURL+"/?oauth_error=token_exchange_failed", http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
 		slog.Error("failed to fetch google user info", "error", err)
-		http.Redirect(w, r, frontendURL+"/?error=userinfo_failed", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, frontendURL+"/?oauth_error=userinfo_failed", http.StatusTemporaryRedirect)
 		return
 	}
 	defer resp.Body.Close()
@@ -174,14 +174,14 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	var info googleUserInfo
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
 		slog.Error("failed to decode google user info", "error", err)
-		http.Redirect(w, r, frontendURL+"/?error=userinfo_decode_failed", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, frontendURL+"/?oauth_error=userinfo_decode_failed", http.StatusTemporaryRedirect)
 		return
 	}
 
 	result, err := h.userService.LoginWithGoogle(r.Context(), info.ID, info.Email, info.Name)
 	if err != nil {
 		slog.Error("google login service error", "error", err)
-		http.Redirect(w, r, frontendURL+"/?error=login_failed", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, frontendURL+"/?oauth_error=login_failed", http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -192,7 +192,7 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	exchangeCode, err := exchangeStore.put(result.Token)
 	if err != nil {
 		slog.Error("failed to generate token exchange code", "error", err)
-		http.Redirect(w, r, frontendURL+"/?error=internal", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, frontendURL+"/?oauth_error=internal", http.StatusTemporaryRedirect)
 		return
 	}
 	redirectURL := fmt.Sprintf("%s/auth/callback?code=%s", frontendURL, exchangeCode)
