@@ -39,13 +39,14 @@ function OAuthCallback() {
           );
         });
       })
-      .catch(() => {
-        // Code invalid, expired, or already used — send the user back to login.
-        navigate("/?oauth_error=exchange_failed", { replace: true });
-        return;
-      })
-      .finally(() => {
+      .then(() => {
+        // Both token exchange and /api/me succeeded — go to dashboard.
         navigate("/dashboard", { replace: true });
+      })
+      .catch(() => {
+        // Code invalid, expired, network error, or /api/me failed
+        // — send the user back to login with an error hint.
+        navigate("/?oauth_error=exchange_failed", { replace: true });
       });
   }, [navigate, searchParams]);
 
