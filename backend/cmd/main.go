@@ -83,7 +83,10 @@ func main() {
 
 	handler := c.Handler(mux)
 
-	port := os.Getenv("PORT")
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = os.Getenv("PORT")
+	}
 	if port == "" {
 		port = "8080"
 	}
