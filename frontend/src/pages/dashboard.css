@@ -1010,7 +1010,3 @@ body {
   text-decoration: line-through;
   color: var(--text-muted);
 }
-
-.task-card.task-completed .edit-button {
-  display: none; 
-}
