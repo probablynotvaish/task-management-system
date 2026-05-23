@@ -101,7 +101,7 @@ export function useDashboard(query: FetchTasksParams) {
         setUserEmail(data.email);
         localStorage.setItem(
           "user",
-          JSON.stringify({ id: data.id, email: data.email }),
+          JSON.stringify({ id: data.id, email: data.email, name: data.name }),
         );
       })
       .catch(() => {

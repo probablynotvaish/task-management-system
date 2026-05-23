@@ -79,9 +79,11 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := middleware.GetUserEmail(r.Context())
+	name := middleware.GetUserName(r.Context())
 	writeJSON(w, http.StatusOK, map[string]string{
 		"id":    userID.Hex(),
 		"email": email,
+		"name":  name,
 	})
 }
 

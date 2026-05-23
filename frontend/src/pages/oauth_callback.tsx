@@ -5,6 +5,7 @@ import { api } from "../api/client";
 type MeResponse = {
   id: string;
   email: string;
+  name: string;
 };
 
 type TokenExchangeResponse = {
@@ -35,7 +36,7 @@ function OAuthCallback() {
         return api.get<MeResponse>("/api/me").then(({ data: me }) => {
           localStorage.setItem(
             "user",
-            JSON.stringify({ id: me.id, email: me.email }),
+            JSON.stringify({ id: me.id, email: me.email, name: me.name }),
           );
         });
       })

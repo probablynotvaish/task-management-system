@@ -18,6 +18,7 @@ type contextKey string
 const (
 	UserIDKey    contextKey = "user_id"
 	UserEmailKey contextKey = "user_email"
+	UserNameKey  contextKey = "user_name"
 )
 
 func writeJSONError(w http.ResponseWriter, status int, message string) {
@@ -50,35 +51,33 @@ func Auth(next http.Handler) http.Handler {
 		if err != nil {
 			slog.Warn("invalid token", "error", err)
 			writeJSONError(w, http.StatusUnauthorized, "invalid or expired token")
-			// http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
 			writeJSONError(w, http.StatusUnauthorized, "invalid token claims")
-			// http.Error(w, `{"error":"invalid token claims"}`, http.StatusUnauthorized)
 			return
 		}
 
 		userIDStr, ok := claims["user_id"].(string)
 		if !ok {
 			writeJSONError(w, http.StatusUnauthorized, "user_id missing or invalid")
-			// http.Error(w, `{"error":"user_id missing or invalid"}`, http.StatusUnauthorized)
 			return
 		}
 
 		userID, err := bson.ObjectIDFromHex(userIDStr)
 		if err != nil {
 			writeJSONError(w, http.StatusUnauthorized, "invalid user_id format")
-			// http.Error(w, `{"error":"invalid user_id format"}`, http.StatusUnauthorized)
 			return
 		}
 
 		email, _ := claims["email"].(string)
+		name, _ := claims["name"].(string)
 
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		ctx = context.WithValue(ctx, UserEmailKey, email)
+		ctx = context.WithValue(ctx, UserNameKey, name)
 
 		slog.Debug("request authenticated", "user_id", userID, "email", email)
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -107,4 +106,9 @@ func GetUserID(ctx context.Context) (bson.ObjectID, bool) {
 func GetUserEmail(ctx context.Context) string {
 	email, _ := ctx.Value(UserEmailKey).(string)
 	return email
+}
+
+func GetUserName(ctx context.Context) string {
+    name, _ := ctx.Value(UserNameKey).(string)
+    return name
 }

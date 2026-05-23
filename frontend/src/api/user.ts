@@ -3,6 +3,7 @@ import { api } from "./client";
 export type CurrentUser = {
   id: string;
   email: string;
+  name: string;
 };
 
 export async function fetchCurrentUser() {

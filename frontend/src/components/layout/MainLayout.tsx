@@ -10,13 +10,16 @@ function MainLayout() {
   const [theme, setTheme] = useState<Theme>(() => {
     return (localStorage.getItem("theme") as Theme) || "light";
   });
-  const [userEmail, setUserEmail] = useState("");
+
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
       try {
-        setUserEmail(JSON.parse(userStr).email);
+        const parsed = JSON.parse(userStr);
+        // We prefer name, but fallback to email just in case the token hasn't refreshed yet
+        setUserName(parsed.name || parsed.email);
       } catch (e) {}
     }
   }, []);
@@ -124,7 +127,7 @@ function MainLayout() {
       <div className="main-wrapper">
         <header className="layout-topbar">
           <div className="topbar-welcome">
-            <p>Welcome back, {userEmail || "there"}!</p>
+            <p>Welcome back, {userName || "there"}!</p>
           </div>
 
           <div className="topbar-actions">
