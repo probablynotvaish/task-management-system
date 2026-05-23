@@ -5,6 +5,7 @@ import Register from "./pages/register";
 import Dashboard from "./pages/dashboard";
 import OAuthCallback from "./pages/oauth_callback";
 import MainLayout from "./components/layout/MainLayout";
+import Archive from "./pages/archive";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token");
@@ -28,10 +29,17 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
-        
+
         {/* Temporary placeholders for Phases 3 & 4 */}
-        <Route path="/calendar" element={<div style={{ padding: 40, color: 'var(--text-primary)' }}><h2>Calendar View</h2></div>} />
-        <Route path="/archive" element={<div style={{ padding: 40, color: 'var(--text-primary)' }}><h2>Archived Tasks</h2></div>} />
+        <Route
+          path="/calendar"
+          element={
+            <div style={{ padding: 40, color: "var(--text-primary)" }}>
+              <h2>Calendar View</h2>
+            </div>
+          }
+        />
+        <Route path="/archive" element={<Archive />} />
       </Route>
     </Routes>
   );

@@ -77,7 +77,9 @@ func (r *MongoTaskRepository) List(ctx context.Context, userID bson.ObjectID, fi
 
 	if filter.Status != "" {
 		query["status"] = filter.Status
-	}
+	} else {
+        query["status"] = bson.M{"$ne": "archived"}
+    }
 	if filter.Priority != "" {
 		query["priority"] = filter.Priority
 	}
