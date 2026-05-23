@@ -767,11 +767,22 @@ body {
 .form-row {
   display: flex;
   gap: 14px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: flex-end;
 }
 
 .form-row .form-group {
-  min-width: 130px;
+  flex: 1;
+}
+
+.form-group input[type="date"] {
+  height: 48px;
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.form-group .select-wrap select {
+  height: 48px;
 }
 
 .form-error {
