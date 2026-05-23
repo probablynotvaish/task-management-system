@@ -36,6 +36,7 @@ export default function TaskModal({
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{editingTask ? "Edit Task" : "New Task"}</h2>
+
           <button
             type="button"
             className="icon-btn"
@@ -87,25 +88,23 @@ export default function TaskModal({
               </div>
             </div>
 
-            {editingTask && (
-              <div className="form-group">
-                <label htmlFor="task-status">Status</label>
-                <div className="select-wrap">
-                  <select
-                    id="task-status"
-                    name="status"
-                    value={form.status}
-                    onChange={onChange}
-                  >
-                    <option value="to_do">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                  <span className="select-arrow">▾</span>
-                </div>
+            <div className="form-group">
+              <label htmlFor="task-status">Status</label>
+              <div className="select-wrap">
+                <select
+                  id="task-status"
+                  name="status"
+                  value={form.status}
+                  onChange={onChange}
+                >
+                  <option value="to_do">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="archived">Archived</option>
+                </select>
+                <span className="select-arrow">▾</span>
               </div>
-            )}
+            </div>
 
             <div className="form-group">
               <label htmlFor="task-due">Due Date</label>
@@ -131,6 +130,7 @@ export default function TaskModal({
           >
             Cancel
           </button>
+
           <button
             type="button"
             className="btn-primary"
