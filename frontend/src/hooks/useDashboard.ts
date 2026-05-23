@@ -187,6 +187,25 @@ export function useDashboard(query: FetchTasksParams) {
     }
   };
 
+
+const toggleTaskStatus = async (task: Task) => {
+    const newStatus = task.status === "completed" ? "to_do" : "completed";
+    
+    try {
+      await updateTask(task.id, {
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        status: newStatus,
+        due_date: task.due_date ?? null,
+      });
+
+      await loadTasks();
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Failed to update task status."));
+    }
+  };
+
   const promptDelete = (task: Task) => {
     setDeleteError("");
     setDeleteTarget(task);
@@ -237,6 +256,7 @@ export function useDashboard(query: FetchTasksParams) {
     closeModal,
     handleFormChange,
     submitTask,
+    toggleTaskStatus,
 
     promptDelete,
     cancelDelete,

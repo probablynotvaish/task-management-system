@@ -104,6 +104,7 @@ function Dashboard() {
     closeModal,
     handleFormChange,
     submitTask,
+    toggleTaskStatus, // <-- FIX 1: Extracted this from the hook
     promptDelete,
     cancelDelete,
     confirmDelete,
@@ -140,6 +141,15 @@ function Dashboard() {
       completed: tasks.filter((task) => task.status === "completed").length,
     };
   }, [tasks, pagination.total]);
+
+  // <-- FIX 2: Added the sortedTasks block right here
+  const sortedTasks = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      if (a.status === "completed" && b.status !== "completed") return 1;
+      if (a.status !== "completed" && b.status === "completed") return -1;
+      return 0; // Maintain original sort order for everything else
+    });
+  }, [tasks]);
 
   return (
     <div className="dashboard-page">
@@ -294,17 +304,26 @@ function Dashboard() {
         {!loading && !error && (
           <>
             <section className="task-grid">
-              {tasks.length === 0 ? (
+              {sortedTasks.length === 0 ? (
                 <div className="state-box">No tasks found.</div>
               ) : (
-                tasks.map((task) => {
+                sortedTasks.map((task) => {
                   const hasDueDate = Boolean(task.due_date);
                   const overdue = hasDueDate ? isOverdue(task.due_date) : false;
+                  const isCompleted = task.status === "completed";
 
                   return (
-                    <article key={task.id} className="task-card">
+                    <article key={task.id} className={`task-card ${isCompleted ? "task-completed" : ""}`}>
                       <div className="task-card-header">
-                        <h3>{task.title}</h3>
+                        <div className="task-title-wrap">
+                          <input
+                            type="checkbox"
+                            className="task-checkbox"
+                            checked={isCompleted}
+                            onChange={() => toggleTaskStatus(task)}
+                          />
+                          <h3>{task.title}</h3>
+                        </div>
 
                         <span
                           className={`priority-badge priority-${task.priority}`}
@@ -403,27 +422,6 @@ function Dashboard() {
               )}
             </section>
 
-            {/* <div className="pagination-controls">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || loading}
-              >
-                Previous
-              </button>
-
-              <span>
-                Page {page} of {pagination.total_pages || 1}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={loading || page >= (pagination.total_pages || 1)}
-              >
-                Next
-              </button>
-            </div> */}
             <div className="pagination-controls">
               <button
                 type="button"
