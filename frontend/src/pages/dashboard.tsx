@@ -28,11 +28,9 @@ function isOverdue(dateString?: string | null) {
   if (!dateString) return false;
   const due = new Date(dateString);
   if (Number.isNaN(due.getTime())) return false;
-  const today = new Date();
-  return (
-    due.getTime() <
-    new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
-  );
+
+  const now = new Date();
+  return due.getTime() < now.getTime();
 }
 
 function formatDate(dateString?: string | null) {
