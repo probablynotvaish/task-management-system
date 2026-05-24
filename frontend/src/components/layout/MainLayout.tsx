@@ -43,7 +43,7 @@ function MainLayout() {
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h2>Planora</h2>
+          <h2>Taskora</h2>
         </div>
 
         <nav className="sidebar-nav">
