@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
@@ -72,7 +73,10 @@ func (s *TaskService) UpdateTask(ctx context.Context, userID bson.ObjectID, task
 	if task.ID.IsZero() {
 		return ErrTaskIDRequired
 	}
-	task.ReminderSent = false
+
+	if task.DueDate != nil && task.DueDate.After(time.Now()) {
+		task.ReminderSent = false
+	}
 	return s.repo.Update(ctx, userID, task)
 }
 
