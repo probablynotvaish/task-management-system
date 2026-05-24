@@ -13,6 +13,7 @@ import (
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
 	"github.com/probablynotvaish/task-management-system/backend/internal/routes"
 	"github.com/probablynotvaish/task-management-system/backend/internal/service"
+	"github.com/probablynotvaish/task-management-system/backend/internal/worker" // <-- Added the worker import
 	"github.com/probablynotvaish/task-management-system/backend/pkg/logger"
 	"github.com/rs/cors"
 )
@@ -50,17 +51,27 @@ func main() {
 	}
 	defer database.Disconnect(ctx, db)
 
+	// 1. Initialize Repositories
 	userRepo := repository.NewMongoUserRepository(db)
 	taskRepo := repository.NewMongoTaskRepository(db)
+	notifRepo := repository.NewMongoNotificationRepository(db) // <-- Added Notification Repo
 
+	// 2. Initialize Services
 	userService := service.NewUserService(userRepo)
 	taskService := service.NewTaskService(taskRepo)
 
+	// 3. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(userService)
 	taskHandler := handlers.NewTaskHandler(taskService)
+	notifHandler := handlers.NewNotificationHandler(notifRepo) // <-- Added Notification Handler
 
+	// 4. Initialize and Start the Cron Worker
+	notificationWorker := worker.NewNotifier(db, notifRepo) // <-- Added Cron Worker
+	notificationWorker.Start()                              // <-- Started Cron Worker
+
+	// 5. Register Routes
 	mux := http.NewServeMux()
-	routes.RegisterRoutes(mux, taskHandler, authHandler)
+	routes.RegisterRoutes(mux, taskHandler, authHandler, notifHandler) // <-- Added notifHandler to routes
 
 	origins := allowedOrigins()
 	slog.Info("CORS allowed origins", "origins", origins)
@@ -97,4 +108,4 @@ func main() {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}
-}
+}
