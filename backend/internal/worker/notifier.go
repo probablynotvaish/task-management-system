@@ -28,68 +28,61 @@ func NewNotifier(db *mongo.Database, notifRepo repository.NotificationRepository
 }
 
 func (n *Notifier) Start() {
-	// "0 8 * * *" runs at exactly 8:00 AM every day.
-	// TIP: Change this to "* * * * *" if you want it to run every 60 seconds to test it!
-	_, err := n.cron.AddFunc("0 8 * * *", n.processDailyDigests)
+	_, err := n.cron.AddFunc("* * * * *", n.processRealTimeReminders)
 	if err != nil {
 		slog.Error("failed to schedule cron job", "error", err)
 		return
 	}
 	n.cron.Start()
-	slog.Info("in-app notification cron worker started")
+	slog.Info("Real-time notification worker started (runs every minute)")
 }
 
-func (n *Notifier) processDailyDigests() {
+func (n *Notifier) processRealTimeReminders() {
 	ctx := context.Background()
 	now := time.Now()
-	
-	// Define "Today" from Midnight to Midnight
-	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	endOfDay := startOfDay.Add(24 * time.Hour)
 
-	// Find tasks due today that are NOT completed or archived
 	filter := bson.M{
-		"status": bson.M{"$nin": []bson.A{{"completed", "archived"}}},
+		"status": bson.M{"$nin": bson.A{"completed", "archived"}},
 		"due_date": bson.M{
-			"$gte": startOfDay,
-			"$lt":  endOfDay,
+			"$exists": true,
+			"$ne":     nil,
+			"$lte":    now,
 		},
+		"reminder_sent": bson.M{"$ne": true},
 	}
 
 	cursor, err := n.db.Collection("tasks").Find(ctx, filter)
 	if err != nil {
-		slog.Error("failed to query tasks for notifications", "error", err)
+		slog.Error("failed to query tasks for real-time notifications", "error", err)
 		return
 	}
 	defer cursor.Close(ctx)
 
-	// Count tasks per user
-	tasksCountByUser := make(map[bson.ObjectID]int)
 	for cursor.Next(ctx) {
 		var task models.Task
-		if err := cursor.Decode(&task); err == nil {
-			tasksCountByUser[task.UserID]++
-		}
-	}
-
-	// Create a notification for each user who has tasks due
-	for userID, count := range tasksCountByUser {
-		message := fmt.Sprintf("Good morning! You have %d tasks due today. Let's get things done!", count)
-		if count == 1 {
-			message = "Good morning! You have 1 task due today. Let's get it done!"
+		if err := cursor.Decode(&task); err != nil {
+			continue
 		}
 
 		notification := &models.Notification{
-			UserID:  userID,
-			Title:   "Daily Digest",
-			Message: message,
-			Type:    "daily_digest",
+			UserID:  task.UserID,
+			Title:   "Task Due Now!",
+			Message: fmt.Sprintf("Your task '%s' is due right now.", task.Title),
+			Type:    "system_alert",
 		}
 
 		if err := n.notifRepo.Create(ctx, notification); err != nil {
-			slog.Error("failed to create notification", "user", userID.Hex(), "error", err)
+			slog.Error("failed to create exact-time notification", "task", task.ID.Hex(), "error", err)
+			continue
+		}
+
+		update := bson.M{"$set": bson.M{"reminder_sent": true}}
+		_, err = n.db.Collection("tasks").UpdateOne(ctx, bson.M{"_id": task.ID}, update)
+
+		if err != nil {
+			slog.Error("failed to mark task as notified", "task", task.ID.Hex(), "error", err)
 		} else {
-			slog.Info("notification created", "user", userID.Hex(), "tasks", count)
+			slog.Info("real-time notification sent", "user", task.UserID.Hex(), "task", task.Title)
 		}
 	}
 }

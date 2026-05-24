@@ -12,8 +12,8 @@ import (
 
 var (
 	ErrTitleRequired  = errors.New("title is required")
-	ErrTaskIDRequired  = errors.New("task ID is required")
-	ErrTaskNotFound = errors.New("task not found")
+	ErrTaskIDRequired = errors.New("task ID is required")
+	ErrTaskNotFound   = errors.New("task not found")
 )
 
 type TaskService struct {
@@ -72,7 +72,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, userID bson.ObjectID, task
 	if task.ID.IsZero() {
 		return ErrTaskIDRequired
 	}
-
+	task.ReminderSent = false
 	return s.repo.Update(ctx, userID, task)
 }
 

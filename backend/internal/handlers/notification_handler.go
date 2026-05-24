@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/probablynotvaish/task-management-system/backend/internal/middleware" // <-- Imported your middleware
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -18,7 +19,13 @@ func NewNotificationHandler(repo repository.NotificationRepository) *Notificatio
 }
 
 func (h *NotificationHandler) GetUnread(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("userID").(bson.ObjectID)
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error": "unauthorized"}`))
+		return
+	}
 
 	notifications, err := h.repo.GetUnreadByUserID(r.Context(), userID)
 	if err != nil {
@@ -27,7 +34,7 @@ func (h *NotificationHandler) GetUnread(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if notifications == nil {
-		notifications = []models.Notification{}
+		notifications = []models.Notification{} 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -35,7 +42,11 @@ func (h *NotificationHandler) GetUnread(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
-	idStr := "extracted_id_from_url"
+	idStr := r.PathValue("id")
+	if idStr == "" {
+		http.Error(w, "Notification ID is required", http.StatusBadRequest)
+		return
+	}
 
 	objID, err := bson.ObjectIDFromHex(idStr)
 	if err != nil {
@@ -48,6 +59,7 @@ func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status": "success"}`))
 }
