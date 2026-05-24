@@ -40,7 +40,6 @@ func (r *mongoNotificationRepo) GetUnreadByUserID(ctx context.Context, userID bs
 		"is_read": false,
 	}
 	
-	// Sort by newest first
 	opts := options.Find().SetSort(bson.M{"created_at": -1})
 	
 	cursor, err := r.collection.Find(ctx, filter, opts)

@@ -51,7 +51,6 @@ func (s *tokenStore) put(jwt string) (string, error) {
 }
 
 // redeem returns the JWT for code and deletes the entry (single-use).
-// Returns ("", false) when the code is unknown or has expired.
 func (s *tokenStore) redeem(code string) (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

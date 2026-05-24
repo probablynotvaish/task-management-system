@@ -10,7 +10,7 @@ type Notification struct {
 	UserID    bson.ObjectID `bson:"user_id" json:"user_id"`
 	Title     string        `bson:"title" json:"title"`
 	Message   string        `bson:"message" json:"message"`
-	Type      string        `bson:"type" json:"type"` // e.g., "daily_digest", "system_alert"
+	Type      string        `bson:"type" json:"type"`
 	IsRead    bool          `bson:"is_read" json:"is_read"`
 	CreatedAt time.Time     `bson:"created_at" json:"created_at"`
 }
