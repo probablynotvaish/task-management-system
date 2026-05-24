@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useNotifications } from "../../hooks/useNotifications";
 import "./layout.css";
 
 type Theme = "light" | "dark";
 
 function MainLayout() {
   const navigate = useNavigate();
+
+  // --- ADDED THIS: Hooking up our new notification logic ---
+  const { notifications, unreadCount, readNotification } = useNotifications();
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  // --------------------------------------------------------
 
   const [theme, setTheme] = useState<Theme>(() => {
     return (localStorage.getItem("theme") as Theme) || "light";
@@ -18,7 +24,6 @@ function MainLayout() {
     if (userStr) {
       try {
         const parsed = JSON.parse(userStr);
-        // We prefer name, but fallback to email just in case the token hasn't refreshed yet
         setUserName(parsed.name || parsed.email);
       } catch (e) {}
     }
@@ -43,7 +48,7 @@ function MainLayout() {
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h2>Taskora</h2>
+          <h2>Planora</h2> {/* <-- Updated from Taskora just in case! */}
         </div>
 
         <nav className="sidebar-nav">
@@ -131,6 +136,56 @@ function MainLayout() {
           </div>
 
           <div className="topbar-actions">
+            {/* --- ADDED THIS: NOTIFICATION BELL WIDGET --- */}
+            <div className="notification-wrapper">
+              <button
+                type="button"
+                className="bell-btn"
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+
+                {unreadCount > 0 && (
+                  <span className="notif-badge">{unreadCount}</span>
+                )}
+              </button>
+
+              {isNotifOpen && (
+                <div className="notif-dropdown">
+                  <div className="notif-header">
+                    <h4>Notifications</h4>
+                  </div>
+                  <div className="notif-body">
+                    {notifications.length === 0 ? (
+                      <div className="notif-empty">You're all caught up!</div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          className="notif-item"
+                          onClick={() => readNotification(notif.id)}
+                        >
+                          <p className="notif-title">{notif.title}</p>
+                          <p className="notif-message">{notif.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* ------------------------------------------- */}
+
             <button
               type="button"
               className="theme-toggle-btn"
