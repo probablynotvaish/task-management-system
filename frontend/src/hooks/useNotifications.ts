@@ -11,7 +11,7 @@ export function useNotifications() {
       setNotifications((prev) => {
         if (isPolling && newNotifications.length > prev.length) {
           const audio = new Audio('/pop.mp3');
-          audio.play().catch(e => console.log("Audio blocked by browser auto-play policy"));
+          audio.play().catch(e => console.log("Audio blocked by browser auto-play policy:", e));
         }
         return newNotifications;
       });
