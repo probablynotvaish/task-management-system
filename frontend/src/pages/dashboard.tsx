@@ -218,8 +218,9 @@ function Dashboard() {
             ) : (
               sortedTasks.map((task) => {
                 const hasDueDate = Boolean(task.due_date);
-                const overdue = hasDueDate ? isOverdue(task.due_date) : false;
                 const isCompleted = task.status === "completed";
+                const overdue =
+                  hasDueDate && !isCompleted ? isOverdue(task.due_date) : false;
 
                 return (
                   <article
