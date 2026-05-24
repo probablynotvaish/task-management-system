@@ -732,7 +732,7 @@ body {
 }
 
 .form-group input[type="text"],
-.form-group input[type="date"],
+.form-group input[type="datetime-local"],
 .form-group textarea,
 .form-group .select-wrap select {
   width: 100%;
@@ -750,8 +750,9 @@ body {
   -webkit-appearance: none;
 }
 
+
 .form-group input[type="text"]:focus,
-.form-group input[type="date"]:focus,
+.form-group input[type="datetime-local"]:focus,
 .form-group textarea:focus,
 .form-group .select-wrap select:focus {
   border-color: var(--accent);
@@ -775,7 +776,7 @@ body {
   flex: 1;
 }
 
-.form-group input[type="date"] {
+.form-group input[type="datetime-local"] {
   height: 48px;
   min-height: 48px;
   padding: 0 14px;

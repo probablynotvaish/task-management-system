@@ -11,7 +11,7 @@ const statusFilterOptions: Array<{ label: string; value: "all" | TaskStatus }> =
     { label: "Status", value: "all" },
     { label: "Pending", value: "to_do" },
     { label: "In Progress", value: "in_progress" },
-    { label: "Completed", value: "completed" }
+    { label: "Completed", value: "completed" },
   ];
 
 const priorityFilterOptions: Array<{
@@ -43,6 +43,8 @@ function formatDate(dateString?: string | null) {
     month: "short",
     day: "2-digit",
     year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
 }
 

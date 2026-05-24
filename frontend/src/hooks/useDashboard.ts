@@ -28,11 +28,15 @@ function getStoredEmail(): string {
   }
 }
 
-function toDateInputValue(dateString?: string | null) {
+function toDateTimeInputValue(dateString?: string | null) {
   if (!dateString) return "";
   const d = new Date(dateString);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toISOString().slice(0, 10);
+  
+  const timezoneOffset = d.getTimezoneOffset() * 60000;
+  const localDate = new Date(d.getTime() - timezoneOffset);
+  
+  return localDate.toISOString().slice(0, 16);
 }
 
 type PaginationState = Omit<PaginatedTasksResponse, "tasks">;
@@ -123,7 +127,7 @@ export function useDashboard(query: FetchTasksParams) {
       description: task.description,
       priority: task.priority,
       status: task.status,
-      due_date: toDateInputValue(task.due_date),
+      due_date: toDateTimeInputValue(task.due_date),
     });
     setFormError("");
     setModalOpen(true);

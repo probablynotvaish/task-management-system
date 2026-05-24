@@ -110,9 +110,9 @@ export default function TaskModal({
               <label htmlFor="task-due">Due Date</label>
               <input
                 id="task-due"
-                type="date"
+                type="datetime-local"
                 name="due_date"
-                value={form.due_date}
+                value={form.due_date || ""}
                 onChange={onChange}
               />
             </div>
