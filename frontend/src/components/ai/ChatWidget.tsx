@@ -24,11 +24,70 @@ type UiMessage =
   | { kind: "model"; text: string; actions?: ActionTaken[] }
   | { kind: "error"; text: string };
 
-interface ChatWidgetProps {
-  onTasksChanged?: () => void;
+function renderMarkdown(text: string) {
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let currentList: React.ReactNode[] = [];
+
+  const flushList = (key: string | number) => {
+    if (currentList.length > 0) {
+      elements.push(
+        <ul key={`list-${key}`} style={{ margin: "6px 0", paddingLeft: "20px", listStyle: "disc" }}>
+          {currentList}
+        </ul>
+      );
+      currentList = [];
+    }
+  };
+
+  const parseInline = (content: string) => {
+    const boldRegex = /\*\*(.*?)\*\*/g;
+    const parts: React.ReactNode[] = [];
+    let lastIdx = 0;
+    let match;
+    while ((match = boldRegex.exec(content)) !== null) {
+      if (match.index > lastIdx) {
+        parts.push(content.substring(lastIdx, match.index));
+      }
+      parts.push(<strong key={match.index}>{match[1]}</strong>);
+      lastIdx = boldRegex.lastIndex;
+    }
+    if (lastIdx < content.length) {
+      parts.push(content.substring(lastIdx));
+    }
+    return parts.length > 0 ? parts : content;
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    const isBullet = trimmed.startsWith("* ") || trimmed.startsWith("- ");
+
+    if (isBullet) {
+      const content = trimmed.substring(2);
+      currentList.push(
+        <li key={`li-${index}`} style={{ marginBottom: "4px", fontSize: "13.5px" }}>
+          {parseInline(content)}
+        </li>
+      );
+    } else {
+      flushList(index);
+      if (trimmed === "") {
+        elements.push(<div key={`space-${index}`} style={{ height: "8px" }} />);
+      } else {
+        elements.push(
+          <p key={`p-${index}`} style={{ margin: "6px 0", fontSize: "13.5px", lineHeight: "1.5" }}>
+            {parseInline(line)}
+          </p>
+        );
+      }
+    }
+  });
+
+  flushList("end");
+  return elements;
 }
 
-export default function ChatWidget({ onTasksChanged }: ChatWidgetProps) {
+export default function ChatWidget({ onTasksChanged }: { onTasksChanged?: () => void }) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [uiMessages, setUiMessages] = useState<UiMessage[]>([]);
@@ -206,14 +265,14 @@ export default function ChatWidget({ onTasksChanged }: ChatWidgetProps) {
               if (msg.kind === "user") {
                 return (
                   <div key={idx} className="chat-msg user">
-                    <div className="chat-bubble">{msg.text}</div>
+                    <div className="chat-bubble">{renderMarkdown(msg.text)}</div>
                   </div>
                 );
               }
 
               return (
                 <div key={idx} className="chat-msg model">
-                  <div className="chat-bubble">{msg.text}</div>
+                  <div className="chat-bubble">{renderMarkdown(msg.text)}</div>
                   {msg.actions && msg.actions.length > 0 && (
                     <div className="chat-actions">
                       {msg.actions.map((a, ai) => (
