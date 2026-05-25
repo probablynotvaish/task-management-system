@@ -109,7 +109,7 @@ function Dashboard() {
     };
   }, [tasks, pagination.total]);
 
-  const sortedTasks = useMemo(() => {
+  const Tasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
       if (a.status === "completed" && b.status !== "completed") return 1;
       if (a.status !== "completed" && b.status === "completed") return -1;
@@ -220,10 +220,10 @@ function Dashboard() {
       {!loading && !error && (
         <>
           <section className="task-grid">
-            {sortedTasks.length === 0 ? (
+            {Tasks.length === 0 ? (
               <div className="state-box">No tasks found.</div>
             ) : (
-              sortedTasks.map((task) => {
+              Tasks.map((task) => {
                 const hasDueDate = Boolean(task.due_date);
                 const isCompleted = task.status === "completed";
                 const overdue =

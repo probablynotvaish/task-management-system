@@ -205,7 +205,24 @@ export function useDashboard(query: FetchTasksParams) {
         status: newStatus,
         due_date: task.due_date ?? null,
       });
-      await loadTasks();
+
+      setTasks((prev) => {
+        const remaining = prev.filter((t) => t.id !== task.id);
+        const updatedTask = { ...task, status: newStatus };
+
+        if (newStatus === "completed") {
+          return [...remaining, updatedTask];
+        }
+
+        const firstCompletedIndex = remaining.findIndex((t) => t.status === "completed");
+        if (firstCompletedIndex === -1) {
+          return [...remaining, updatedTask];
+        }
+
+        const next = [...remaining];
+        next.splice(firstCompletedIndex, 0, updatedTask);
+        return next;
+      });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, "Failed to update task status."));
     }
