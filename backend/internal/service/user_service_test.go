@@ -9,8 +9,8 @@ import (
 	"github.com/probablynotvaish/task-management-system/backend/internal/service/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"golang.org/x/crypto/bcrypt"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestUserService_Signup(t *testing.T) {

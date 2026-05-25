@@ -109,6 +109,6 @@ func GetUserEmail(ctx context.Context) string {
 }
 
 func GetUserName(ctx context.Context) string {
-    name, _ := ctx.Value(UserNameKey).(string)
-    return name
+	name, _ := ctx.Value(UserNameKey).(string)
+	return name
 }

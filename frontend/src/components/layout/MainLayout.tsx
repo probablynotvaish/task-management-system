@@ -223,10 +223,8 @@ function MainLayout() {
         </main>
       </div>
 
-      {/* AI Chatbot — floats over every protected page */}
       <ChatWidget
         onTasksChanged={() => {
-          // Dispatch a custom event that Dashboard listens for to re-fetch tasks
           window.dispatchEvent(new CustomEvent("ai-tasks-changed"));
         }}
       />

@@ -94,7 +94,6 @@ function Dashboard() {
     refreshTasks,
   } = useDashboard(taskQuery);
 
-  // Listen for the AI chatbot's task-mutation event and refresh
   useEffect(() => {
     const handler = () => void refreshTasks();
     window.addEventListener("ai-tasks-changed", handler);

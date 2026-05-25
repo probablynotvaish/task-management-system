@@ -10,8 +10,8 @@ import (
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/middleware"
 	"github.com/probablynotvaish/task-management-system/backend/internal/models"
-	"github.com/probablynotvaish/task-management-system/backend/internal/service"
 	"github.com/probablynotvaish/task-management-system/backend/internal/repository"
+	"github.com/probablynotvaish/task-management-system/backend/internal/service"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 

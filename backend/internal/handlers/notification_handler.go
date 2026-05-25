@@ -34,7 +34,7 @@ func (h *NotificationHandler) GetUnread(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if notifications == nil {
-		notifications = []models.Notification{} 
+		notifications = []models.Notification{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

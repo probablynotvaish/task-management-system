@@ -22,17 +22,21 @@ import (
 // ──────────────────────────────────────────────
 
 type geminiPart struct {
-	Text         string              `json:"text,omitempty"`
-	FunctionCall *geminiFunctionCall `json:"functionCall,omitempty"`
-	FunctionResp *geminiFunctionResp `json:"functionResponse,omitempty"`
+	Text             string              `json:"text,omitempty"`
+	Thought          bool                `json:"thought,omitempty"`
+	FunctionCall     *geminiFunctionCall `json:"functionCall,omitempty"`
+	FunctionResp     *geminiFunctionResp `json:"functionResponse,omitempty"`
+	ThoughtSignature string              `json:"thoughtSignature,omitempty"`
 }
 
 type geminiFunctionCall struct {
+	Id   string         `json:"id,omitempty"`
 	Name string         `json:"name"`
 	Args map[string]any `json:"args"`
 }
 
 type geminiFunctionResp struct {
+	Id       string         `json:"id,omitempty"`
 	Name     string         `json:"name"`
 	Response map[string]any `json:"response"`
 }
@@ -52,10 +56,19 @@ type geminiFunctionDecl struct {
 	Parameters  map[string]any `json:"parameters"`
 }
 
+type geminiThinkingConfig struct {
+	ThinkingBudget int `json:"thinkingBudget"`
+}
+
+type geminiGenerationConfig struct {
+	ThinkingConfig geminiThinkingConfig `json:"thinkingConfig"`
+}
+
 type geminiRequest struct {
-	SystemInstruction *geminiContent  `json:"systemInstruction,omitempty"`
-	Contents          []geminiContent `json:"contents"`
-	Tools             []geminiTool    `json:"tools,omitempty"`
+	SystemInstruction *geminiContent          `json:"systemInstruction,omitempty"`
+	Contents          []geminiContent         `json:"contents"`
+	Tools             []geminiTool            `json:"tools,omitempty"`
+	GenerationConfig  *geminiGenerationConfig `json:"generationConfig,omitempty"`
 }
 
 type geminiCandidate struct {
@@ -71,7 +84,7 @@ type geminiResponse struct {
 // ──────────────────────────────────────────────
 
 type ChatHistoryMessage struct {
-	Role    string `json:"role"`    // "user" | "model"
+	Role    string `json:"role"` // "user" | "model"
 	Content string `json:"content"`
 }
 
@@ -283,12 +296,16 @@ func callGemini(ctx context.Context, apiKey string, req geminiRequest) (*geminiR
 	return &gemResp, nil
 }
 
-// extractText pulls the text content from the first candidate.
+// extractText pulls the text content from the first candidate, skipping thought parts.
 func extractText(resp *geminiResponse) string {
 	if len(resp.Candidates) == 0 {
 		return "I'm sorry, I couldn't generate a response. Please try again."
 	}
 	for _, part := range resp.Candidates[0].Content.Parts {
+		// Skip internal thought parts produced by thinking models
+		if part.Thought {
+			continue
+		}
 		if part.Text != "" {
 			return part.Text
 		}
@@ -296,14 +313,15 @@ func extractText(resp *geminiResponse) string {
 	return ""
 }
 
-// extractFunctionCall returns the first function call in the response, if any.
-func extractFunctionCall(resp *geminiResponse) *geminiFunctionCall {
+// extractFunctionCallPart returns the first function call part in the response, if any.
+func extractFunctionCallPart(resp *geminiResponse) *geminiPart {
 	if len(resp.Candidates) == 0 {
 		return nil
 	}
 	for _, part := range resp.Candidates[0].Content.Parts {
 		if part.FunctionCall != nil {
-			return part.FunctionCall
+			// Do NOT skip thought parts here if they contain the functionCall (Gemini puts them in the same part)
+			return &part
 		}
 	}
 	return nil
@@ -417,7 +435,6 @@ func (h *AIHandler) executeTool(ctx context.Context, userID bson.ObjectID, fnCal
 			return map[string]any{"error": "invalid task ID"}, nil, nil
 		}
 
-		// Fetch existing task first
 		existing, err := h.taskService.ListTasks(ctx, userID, models.TaskFilter{Page: 1, PageSize: 100})
 		if err != nil {
 			return map[string]any{"error": "failed to fetch task"}, nil, nil
@@ -433,7 +450,6 @@ func (h *AIHandler) executeTool(ctx context.Context, userID bson.ObjectID, fnCal
 			return map[string]any{"error": "task not found"}, nil, nil
 		}
 
-		// Apply updates
 		if v := getString("title"); v != "" {
 			found.Title = v
 		}
@@ -477,7 +493,6 @@ func (h *AIHandler) executeTool(ctx context.Context, userID bson.ObjectID, fnCal
 			return map[string]any{"error": "invalid task ID"}, nil, nil
 		}
 
-		// Fetch and update
 		existing, err := h.taskService.ListTasks(ctx, userID, models.TaskFilter{Page: 1, PageSize: 100})
 		if err != nil {
 			return map[string]any{"error": "failed to fetch tasks"}, nil, nil
@@ -535,7 +550,6 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build conversation history for Gemini
 	contents := make([]geminiContent, 0, len(req.History)+1)
 	for _, msg := range req.History {
 		contents = append(contents, geminiContent{
@@ -543,7 +557,6 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 			Parts: []geminiPart{{Text: msg.Content}},
 		})
 	}
-	// Add the current user message
 	contents = append(contents, geminiContent{
 		Role:  "user",
 		Parts: []geminiPart{{Text: req.Message}},
@@ -556,11 +569,13 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		},
 		Contents: contents,
 		Tools:    geminiTools(),
+		GenerationConfig: &geminiGenerationConfig{
+			ThinkingConfig: geminiThinkingConfig{ThinkingBudget: 0},
+		},
 	}
 
 	var actionsTaken []ActionTaken
 
-	// Agentic loop: Gemini may request multiple tool calls before giving a final answer
 	for range 5 { // max 5 tool-call iterations
 		gemResp, err := callGemini(r.Context(), apiKey, gemReq)
 		if err != nil {
@@ -569,9 +584,8 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fnCall := extractFunctionCall(gemResp)
-		if fnCall == nil {
-			// No more function calls — final text answer
+		fnPart := extractFunctionCallPart(gemResp)
+		if fnPart == nil {
 			reply := extractText(gemResp)
 			if reply == "" {
 				reply = "I processed your request successfully."
@@ -583,7 +597,7 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Execute the tool
+		fnCall := fnPart.FunctionCall
 		slog.Info("AI executing tool", "function", fnCall.Name, "args", fnCall.Args)
 		toolResult, action, err := h.executeTool(r.Context(), userID, fnCall)
 		if err != nil {
@@ -593,18 +607,13 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 			actionsTaken = append(actionsTaken, *action)
 		}
 
-		// Append model's function call + tool result to conversation
 		gemReq.Contents = append(gemReq.Contents,
-			// Model's turn (the function call it made)
-			geminiContent{
-				Role:  "model",
-				Parts: []geminiPart{{FunctionCall: fnCall}},
-			},
-			// Tool result turn
+			gemResp.Candidates[0].Content,
 			geminiContent{
 				Role: "user",
 				Parts: []geminiPart{{
 					FunctionResp: &geminiFunctionResp{
+						Id:       fnCall.Id,
 						Name:     fnCall.Name,
 						Response: toolResult,
 					},
