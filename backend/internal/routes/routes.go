@@ -35,4 +35,5 @@ func RegisterRoutes(
 
 	// AI chat route
 	mux.Handle("POST /api/ai/chat", middleware.Auth(http.HandlerFunc(aiHandler.Chat)))
+	mux.Handle("GET /api/ai/quota", middleware.Auth(http.HandlerFunc(aiHandler.GetQuota)))
 }

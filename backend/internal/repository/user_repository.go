@@ -17,6 +17,7 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	GetByID(ctx context.Context, id string) (*models.User, error)
 	FindOrCreateByGoogle(ctx context.Context, googleID, email, name string) (*models.User, error)
+	Update(ctx context.Context, user *models.User) error
 }
 
 type MongoUserRepository struct {
@@ -125,4 +126,15 @@ func (r *MongoUserRepository) FindOrCreateByGoogle(ctx context.Context, googleID
 
 	slog.Info("google user upserted", "id", user.ID.Hex(), "email", email)
 	return &user, nil
+}
+
+func (r *MongoUserRepository) Update(ctx context.Context, user *models.User) error {
+	now := time.Now().UTC()
+	user.UpdatedAt = now
+	_, err := r.collection.ReplaceOne(ctx, bson.M{"_id": user.ID}, user)
+	if err != nil {
+		slog.Error("failed to update user", "id", user.ID.Hex(), "error", err)
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+	return nil
 }

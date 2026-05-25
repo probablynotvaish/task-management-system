@@ -59,7 +59,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userService)
 	taskHandler := handlers.NewTaskHandler(taskService)
 	notifHandler := handlers.NewNotificationHandler(notifRepo)
-	aiHandler := handlers.NewAIHandler(taskService)
+	aiHandler := handlers.NewAIHandler(taskService, userService)
 
 	notificationWorker := worker.NewNotifier(db, notifRepo)
 	notificationWorker.Start()

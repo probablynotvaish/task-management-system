@@ -107,6 +107,14 @@ func (s *UserService) LoginWithGoogle(ctx context.Context, googleID, email, name
 	return &AuthResponse{Token: token, User: user}, nil
 }
 
+func (s *UserService) GetByID(ctx context.Context, id string) (*models.User, error) {
+	return s.repo.GetByID(ctx, id)
+}
+
+func (s *UserService) Update(ctx context.Context, user *models.User) error {
+	return s.repo.Update(ctx, user)
+}
+
 func generateToken(user *models.User) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {

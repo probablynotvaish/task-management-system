@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { sendChatMessage, type ActionTaken, type ChatMessage } from "../../api/ai";
+import { sendChatMessage, getAIQuota, type ActionTaken, type ChatMessage } from "../../api/ai";
+import { getApiErrorMessage } from "../../utils/apiError";
+import axios from "axios";
 import "./ChatWidget.css";
 
 const QUICK_PROMPTS = [
@@ -32,9 +34,24 @@ export default function ChatWidget({ onTasksChanged }: ChatWidgetProps) {
   const [uiMessages, setUiMessages] = useState<UiMessage[]>([]);
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [requestsLeft, setRequestsLeft] = useState<number>(20);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      const fetchQuota = async () => {
+        try {
+          const quota = await getAIQuota();
+          setRequestsLeft(quota.requests_left);
+        } catch (err) {
+          console.error("Failed to fetch AI quota", err);
+        }
+      };
+      fetchQuota();
+    }
+  }, [open]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,13 +94,20 @@ export default function ChatWidget({ onTasksChanged }: ChatWidgetProps) {
         { role: "model", content: res.reply },
       ]);
 
+      setRequestsLeft(res.requests_left);
+
       if (res.actions_taken && res.actions_taken.length > 0) {
         onTasksChanged?.();
       }
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      const msg = getApiErrorMessage(err, "Something went wrong. Please try again.");
       setUiMessages((prev) => [...prev, { kind: "error", text: msg }]);
+      
+      if (axios.isAxiosError(err) && err.response?.status === 429) {
+        setRequestsLeft(0);
+      } else if (typeof msg === "string" && (msg.includes("20 requests") || msg.includes("limit"))) {
+        setRequestsLeft(0);
+      }
     } finally {
       setLoading(false);
     }
@@ -136,7 +160,7 @@ export default function ChatWidget({ onTasksChanged }: ChatWidgetProps) {
             </div>
             <div className="chat-header-info">
               <h4>Planora AI</h4>
-              <span>Your smart task assistant</span>
+              <span>You can make 20 requests per day. Requests left: {requestsLeft}</span>
             </div>
             <button className="chat-close-btn" onClick={clearAndClose} aria-label="Close">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -215,18 +239,18 @@ export default function ChatWidget({ onTasksChanged }: ChatWidgetProps) {
               id="chat-input"
               className="chat-textarea"
               rows={1}
-              placeholder="Ask me anything about your tasks…"
+              placeholder={requestsLeft <= 0 ? "Limit reached. Try again tomorrow." : "Ask me anything about your tasks…"}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              disabled={loading}
+              disabled={loading || requestsLeft <= 0}
               aria-label="Chat message input"
             />
             <button
               id="chat-send-btn"
               className="chat-send-btn"
               onClick={() => send(input)}
-              disabled={loading || !input.trim()}
+              disabled={loading || !input.trim() || requestsLeft <= 0}
               aria-label="Send message"
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

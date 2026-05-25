@@ -13,6 +13,12 @@ export type ActionTaken = {
 export type ChatResponse = {
   reply: string;
   actions_taken: ActionTaken[];
+  requests_left: number;
+};
+
+export type AIQuotaResponse = {
+  requests_left: number;
+  total_requests: number;
 };
 
 export async function sendChatMessage(
@@ -23,5 +29,10 @@ export async function sendChatMessage(
     message,
     history,
   });
+  return data;
+}
+
+export async function getAIQuota(): Promise<AIQuotaResponse> {
+  const { data } = await api.get<AIQuotaResponse>("/api/ai/quota");
   return data;
 }

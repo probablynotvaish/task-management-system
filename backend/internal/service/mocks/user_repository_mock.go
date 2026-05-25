@@ -48,3 +48,8 @@ func (m *MockUserRepository) FindOrCreateByGoogle(
 
 	return args.Get(0).(*models.User), args.Error(1)
 }
+
+func (m *MockUserRepository) Update(ctx context.Context, user *models.User) error {
+	args := m.Called(ctx, user)
+	return args.Error(0)
+}

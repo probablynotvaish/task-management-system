@@ -12,6 +12,8 @@ type User struct {
 	Email     string        `bson:"email"                json:"email"`
 	Password  string        `bson:"password"             json:"-"`
 	GoogleID  string        `bson:"google_id,omitempty"  json:"google_id,omitempty"`
-	CreatedAt time.Time     `bson:"created_at"           json:"created_at"`
-	UpdatedAt time.Time     `bson:"updated_at"           json:"updated_at"`
+	CreatedAt         time.Time     `bson:"created_at"           json:"created_at"`
+	UpdatedAt         time.Time     `bson:"updated_at"           json:"updated_at"`
+	AIRequestsToday   int           `bson:"ai_requests_today"    json:"ai_requests_today"`
+	AILastRequestDate string        `bson:"ai_last_request_date" json:"ai_last_request_date"`
 }

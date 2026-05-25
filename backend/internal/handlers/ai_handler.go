@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/probablynotvaish/task-management-system/backend/internal/middleware"
@@ -101,6 +102,7 @@ type ActionTaken struct {
 type ChatResponse struct {
 	Reply        string        `json:"reply"`
 	ActionsTaken []ActionTaken `json:"actions_taken"`
+	RequestsLeft int           `json:"requests_left"`
 }
 
 // ──────────────────────────────────────────────
@@ -109,10 +111,14 @@ type ChatResponse struct {
 
 type AIHandler struct {
 	taskService *service.TaskService
+	userService *service.UserService
 }
 
-func NewAIHandler(taskService *service.TaskService) *AIHandler {
-	return &AIHandler{taskService: taskService}
+func NewAIHandler(taskService *service.TaskService, userService *service.UserService) *AIHandler {
+	return &AIHandler{
+		taskService: taskService,
+		userService: userService,
+	}
 }
 
 // geminiTools returns the function declarations we expose to Gemini.
@@ -544,9 +550,36 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := h.userService.GetByID(r.Context(), userID.Hex())
+	if err != nil {
+		slog.Error("failed to get user", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to retrieve user info"})
+		return
+	}
+
+	today := time.Now().UTC().Format("2006-01-02")
+	if user.AILastRequestDate != today {
+		user.AIRequestsToday = 0
+		user.AILastRequestDate = today
+	}
+
+	if user.AIRequestsToday >= 20 {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error": "You can make 20 requests per day. Requests left: 0",
+		})
+		return
+	}
+
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "AI service not configured"})
+		return
+	}
+
+	user.AIRequestsToday++
+	if err := h.userService.Update(r.Context(), user); err != nil {
+		slog.Error("failed to update user request count", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update usage limits"})
 		return
 	}
 
@@ -580,7 +613,14 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		gemResp, err := callGemini(r.Context(), apiKey, gemReq)
 		if err != nil {
 			slog.Error("gemini call failed", "error", err)
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "AI service error: " + err.Error()})
+			errStr := err.Error()
+			if strings.Contains(errStr, "QuotaFailure") || strings.Contains(errStr, "quota") || strings.Contains(errStr, "429") {
+				writeJSON(w, http.StatusTooManyRequests, map[string]string{
+					"error": "You can make 20 requests per day. Requests left: 0",
+				})
+				return
+			}
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "AI service error: " + errStr})
 			return
 		}
 
@@ -593,6 +633,7 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusOK, ChatResponse{
 				Reply:        reply,
 				ActionsTaken: actionsTaken,
+				RequestsLeft: 20 - user.AIRequestsToday,
 			})
 			return
 		}
@@ -625,5 +666,41 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ChatResponse{
 		Reply:        "I've completed your request.",
 		ActionsTaken: actionsTaken,
+		RequestsLeft: 20 - user.AIRequestsToday,
+	})
+}
+
+// GetQuota returns the remaining and total requests today for the current user.
+func (h *AIHandler) GetQuota(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	user, err := h.userService.GetByID(r.Context(), userID.Hex())
+	if err != nil {
+		slog.Error("failed to get user", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to retrieve user quota"})
+		return
+	}
+
+	today := time.Now().UTC().Format("2006-01-02")
+	if user.AILastRequestDate != today {
+		user.AIRequestsToday = 0
+		user.AILastRequestDate = today
+		if err := h.userService.Update(r.Context(), user); err != nil {
+			slog.Error("failed to update user quota on reset", "error", err)
+		}
+	}
+
+	requestsLeft := 20 - user.AIRequestsToday
+	if requestsLeft < 0 {
+		requestsLeft = 0
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"requests_left":   requestsLeft,
+		"total_requests": 20,
 	})
 }
