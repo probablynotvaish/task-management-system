@@ -30,15 +30,6 @@ function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* Temporary placeholders for Phases 3 & 4 */}
-        <Route
-          path="/calendar"
-          element={
-            <div style={{ padding: 40, color: "var(--text-primary)" }}>
-              <h2>Calendar View</h2>
-            </div>
-          }
-        />
         <Route path="/archive" element={<Archive />} />
       </Route>
     </Routes>
