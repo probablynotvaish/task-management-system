@@ -96,6 +96,13 @@ func (rw *RecurrenceWorker) Process() {
 			continue
 		}
 
+		// Only spawn if the next occurrence is still in the future.
+		// This prevents older completed ancestors from re-creating occurrences
+		// that have already been handled by a more recent child task.
+		if !nextDate.After(now) {
+			continue
+		}
+
 		newTask := &models.Task{
 			Title:            task.Title,
 			Description:      task.Description,
