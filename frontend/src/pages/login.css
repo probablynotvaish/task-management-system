@@ -15,7 +15,8 @@
 .login-card {
   background: #e9e6e2;
   padding: 30px;
-  width: 350px;
+  width: 420px;
+  max-width: 92vw;
   border-radius: 15px;
   text-align: center;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -65,14 +66,26 @@
 .form-group input {
   width: 100%;
   display: block;
-  padding: 10px 12px;
+  padding: 12px 14px;
   margin-top: 5px;
-  border-radius: 6px;
-  border: none;
-  background-color: #6b6600;
-  color: white;
+  border-radius: 10px;
+  border: 1px solid #c9ced8;
+  background-color: #f7f8fb;
+  color: #1f2937;
   outline: none;
   box-sizing: border-box;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.form-group input::placeholder {
+  color: #9aa3b2;
+}
+
+.form-group input:focus {
+  border-color: #6a5af9;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(106, 90, 249, 0.15);
 }
 
 /* Button */
