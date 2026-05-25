@@ -222,7 +222,7 @@ export default function ChatWidget({ onTasksChanged }: { onTasksChanged?: () => 
               <span>
                 {requestsLeft <= 0
                   ? "AI chat bot limit reached"
-                  : `You can make 20 requests per day. Requests left: ${requestsLeft}`}
+                  : "Your smart task assistant"}
               </span>
             </div>
             <button className="chat-close-btn" onClick={clearAndClose} aria-label="Close">
