@@ -62,7 +62,7 @@
   display: flex;
   flex-direction: column;
   background: var(--bg-surface, #ffffff);
-  border: 1px solid var(--border-color, rgba(0,0,0,0.08));
+  border: 1px solid var(--border, rgba(0,0,0,0.08));
   box-shadow:
     0 24px 64px rgba(0,0,0,0.18),
     0 8px 24px rgba(99, 102, 241, 0.12);
@@ -294,7 +294,7 @@
 /* ── Input area ──────────────────────────────────────────── */
 .chat-input-area {
   padding: 10px 12px;
-  border-top: 1px solid var(--border-color, rgba(0,0,0,0.08));
+  border-top: 1px solid var(--border, #e2e8f0);
   display: flex;
   gap: 8px;
   align-items: flex-end;
@@ -305,12 +305,12 @@
 .chat-textarea {
   flex: 1;
   resize: none;
-  border: 1.5px solid var(--border-color, #e2e8f0);
+  border: 1.5px solid var(--border, #e2e8f0);
   border-radius: 12px;
   padding: 9px 12px;
   font-size: 13.5px;
   font-family: inherit;
-  background: var(--bg-main, #f8fafc);
+  background: var(--bg-input, #f8fafc);
   color: var(--text-primary, #1e293b);
   line-height: 1.4;
   max-height: 96px;
