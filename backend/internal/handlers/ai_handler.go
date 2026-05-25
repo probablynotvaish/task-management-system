@@ -571,6 +571,10 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiKey := os.Getenv("GEMINI_API_KEY")
+	apiKey = strings.TrimSpace(apiKey)
+	apiKey = strings.ReplaceAll(apiKey, "\n", "")
+	apiKey = strings.ReplaceAll(apiKey, "\r", "")
+
 	if apiKey == "" {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "AI service not configured"})
 		return
