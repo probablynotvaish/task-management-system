@@ -1,3 +1,7 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 /* Full background */
 .login-container {
   height: 100vh;
@@ -15,6 +19,7 @@
   border-radius: 15px;
   text-align: center;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 /* Top icon */
@@ -59,18 +64,21 @@
 /* Inputs */
 .form-group input {
   width: 100%;
-  padding: 10px;
+  display: block;
+  padding: 10px 12px;
   margin-top: 5px;
   border-radius: 6px;
   border: none;
-  background-color: #6b6600; /* olive color */
+  background-color: #6b6600;
   color: white;
   outline: none;
+  box-sizing: border-box;
 }
 
 /* Button */
 .login-btn {
   width: 100%;
+  display: block;
   padding: 10px;
   margin-top: 10px;
   background-color: #05051a;
@@ -78,6 +86,7 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .login-btn:hover {
@@ -117,8 +126,9 @@
 /* Google OAuth button */
 .google-btn {
   width: 100%;
-  padding: 10px 16px;
   display: flex;
+  box-sizing: border-box;
+  padding: 10px 16px;
   align-items: center;
   justify-content: center;
   gap: 10px;
@@ -151,4 +161,4 @@
   border-radius: 6px;
   font-size: 13px;
   margin-bottom: 15px;
-}
+}
