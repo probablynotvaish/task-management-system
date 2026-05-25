@@ -59,12 +59,13 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userService)
 	taskHandler := handlers.NewTaskHandler(taskService)
 	notifHandler := handlers.NewNotificationHandler(notifRepo)
+	aiHandler := handlers.NewAIHandler(taskService)
 
 	notificationWorker := worker.NewNotifier(db, notifRepo)
 	notificationWorker.Start()
 
 	mux := http.NewServeMux()
-	routes.RegisterRoutes(mux, taskHandler, authHandler, notifHandler)
+	routes.RegisterRoutes(mux, taskHandler, authHandler, notifHandler, aiHandler)
 
 	origins := allowedOrigins()
 	slog.Info("CORS allowed origins", "origins", origins)

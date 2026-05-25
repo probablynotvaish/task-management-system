@@ -12,6 +12,7 @@ func RegisterRoutes(
 	taskHandler *handlers.TaskHandler,
 	authHandler *handlers.AuthHandler,
 	notifHandler *handlers.NotificationHandler,
+	aiHandler *handlers.AIHandler,
 ) {
 
 	// auth routes
@@ -31,4 +32,7 @@ func RegisterRoutes(
 	// notification routes
 	mux.Handle("GET /api/notifications", middleware.Auth(http.HandlerFunc(notifHandler.GetUnread)))
 	mux.Handle("PUT /api/notifications/{id}/read", middleware.Auth(http.HandlerFunc(notifHandler.MarkAsRead)))
+
+	// AI chat route
+	mux.Handle("POST /api/ai/chat", middleware.Auth(http.HandlerFunc(aiHandler.Chat)))
 }

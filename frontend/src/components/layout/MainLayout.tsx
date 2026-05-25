@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useNotifications } from "../../hooks/useNotifications";
+import ChatWidget from "../ai/ChatWidget";
 import "./layout.css";
 
 type Theme = "light" | "dark";
@@ -221,6 +222,14 @@ function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* AI Chatbot — floats over every protected page */}
+      <ChatWidget
+        onTasksChanged={() => {
+          // Dispatch a custom event that Dashboard listens for to re-fetch tasks
+          window.dispatchEvent(new CustomEvent("ai-tasks-changed"));
+        }}
+      />
     </div>
   );
 }
