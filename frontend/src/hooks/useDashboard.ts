@@ -195,38 +195,45 @@ export function useDashboard(query: FetchTasksParams) {
     }
   };
 
-
   const setTaskStatus = async (task: Task, newStatus: TaskStatus) => {
-    try {
-      await updateTask(task.id, {
-        title: task.title,
-        description: task.description,
-        priority: task.priority,
-        status: newStatus,
-        due_date: task.due_date ?? null,
-      });
+  try {
+    await updateTask(task.id, {
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      status: newStatus,
+      due_date: task.due_date ?? null,
+    });
 
-      setTasks((prev) => {
-        const remaining = prev.filter((t) => t.id !== task.id);
-        const updatedTask = { ...task, status: newStatus };
-
-        if (newStatus === "completed") {
-          return [...remaining, updatedTask];
-        }
-
-        const firstCompletedIndex = remaining.findIndex((t) => t.status === "completed");
-        if (firstCompletedIndex === -1) {
-          return [...remaining, updatedTask];
-        }
-
-        const next = [...remaining];
-        next.splice(firstCompletedIndex, 0, updatedTask);
-        return next;
-      });
-    } catch (err: unknown) {
-      setError(getApiErrorMessage(err, "Failed to update task status."));
+    if (query.status === "archived" && newStatus !== "archived") {
+      await loadTasks();
+      return;
     }
-  };
+
+    setTasks((prev) => {
+      const remaining = prev.filter((t) => t.id !== task.id);
+      const updatedTask = { ...task, status: newStatus };
+
+      if (newStatus === "completed") {
+        return [...remaining, updatedTask];
+      }
+
+      const firstCompletedIndex = remaining.findIndex(
+        (t) => t.status === "completed",
+      );
+
+      if (firstCompletedIndex === -1) {
+        return [...remaining, updatedTask];
+      }
+
+      const next = [...remaining];
+      next.splice(firstCompletedIndex, 0, updatedTask);
+      return next;
+    });
+  } catch (err: unknown) {
+    setError(getApiErrorMessage(err, "Failed to update task status."));
+  }
+};
 
   const toggleTaskStatus = async (task: Task) => {
     const newStatus = task.status === "completed" ? "to_do" : "completed";
