@@ -22,6 +22,12 @@ type TaskRepository interface {
 	Update(ctx context.Context, userID bson.ObjectID, task *models.Task) error
 	Delete(ctx context.Context, userID bson.ObjectID, taskID bson.ObjectID) error
 	GetByID(ctx context.Context, userID bson.ObjectID, taskID bson.ObjectID) (*models.Task, error)
+	// ListRecurring returns all recurring tasks across all users that are due
+	// for a new occurrence (status is completed and recurrence.frequency is set).
+	ListRecurring(ctx context.Context) ([]models.Task, error)
+	// HasPendingOccurrence returns true when a to_do task already exists for the
+	// given recurrence parent, preventing duplicate spawning.
+	HasPendingOccurrence(ctx context.Context, parentID bson.ObjectID) (bool, error)
 }
 
 type MongoTaskRepository struct {
@@ -159,15 +165,19 @@ func (r *MongoTaskRepository) Update(ctx context.Context, userID bson.ObjectID, 
 		"user_id": userID,
 	}
 
-	update := bson.M{
-		"$set": bson.M{
-			"title":       task.Title,
-			"description": task.Description,
-			"status":      task.Status,
-			"priority":    task.Priority,
-			"due_date":    task.DueDate,
-		},
+	setDoc := bson.M{
+		"title":       task.Title,
+		"description": task.Description,
+		"status":      task.Status,
+		"priority":    task.Priority,
+		"due_date":    task.DueDate,
+		"recurrence":  task.Recurrence,
 	}
+	if task.RecurrenceParent != nil {
+		setDoc["recurrence_parent"] = task.RecurrenceParent
+	}
+
+	update := bson.M{"$set": setDoc}
 
 	result, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -219,4 +229,38 @@ func (r *MongoTaskRepository) GetByID(ctx context.Context, userID bson.ObjectID,
 	}
 
 	return &task, nil
+}
+
+// ListRecurring returns all completed tasks that carry a recurrence rule.
+// The recurrence worker uses this to decide which ones need a new occurrence spawned.
+func (r *MongoTaskRepository) ListRecurring(ctx context.Context) ([]models.Task, error) {
+	filter := bson.M{
+		"status":              models.StatusCompleted,
+		"recurrence.frequency": bson.M{"$exists": true, "$ne": ""},
+	}
+	cursor, err := r.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("list recurring tasks: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var tasks []models.Task
+	if err := cursor.All(ctx, &tasks); err != nil {
+		return nil, fmt.Errorf("decode recurring tasks: %w", err)
+	}
+	return tasks, nil
+}
+
+// HasPendingOccurrence returns true when there is already an active (to_do / in_progress)
+// task whose recurrence_parent matches parentID, preventing duplicate spawning.
+func (r *MongoTaskRepository) HasPendingOccurrence(ctx context.Context, parentID bson.ObjectID) (bool, error) {
+	filter := bson.M{
+		"recurrence_parent": parentID,
+		"status":            bson.M{"$in": bson.A{models.StatusToDo, models.StatusInProgress}},
+	}
+	count, err := r.collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return false, fmt.Errorf("check pending occurrence: %w", err)
+	}
+	return count > 0, nil
 }

@@ -4,7 +4,7 @@ import "./dashboard.css";
 import { useDashboard } from "../hooks/useDashboard";
 import TaskModal from "../components/tasks/TaskModal";
 import DeleteTaskDialog from "../components/tasks/DeleteTaskDialog";
-import { type TaskPriority, type TaskStatus } from "../types/task";
+import { type TaskPriority, type TaskStatus, recurrenceLabel } from "../types/task";
 
 const statusFilterOptions: Array<{ label: string; value: "all" | TaskStatus }> =
   [
@@ -261,6 +261,13 @@ function Dashboard() {
                     </div>
 
                     <p className="task-description">{task.description}</p>
+
+                    {task.recurrence?.frequency && (
+                      <div className="recurrence-badge">
+                        <span className="recurrence-icon" aria-hidden="true">🔁</span>
+                        <span>{recurrenceLabel[task.recurrence.frequency]}</span>
+                      </div>
+                    )}
 
                     {hasDueDate && (
                       <div

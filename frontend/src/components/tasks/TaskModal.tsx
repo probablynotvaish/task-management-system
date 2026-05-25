@@ -1,5 +1,6 @@
 import type { ChangeEvent } from "react";
 import type { Task, TaskFormData } from "../../types/task";
+import { recurrenceLabel } from "../../types/task";
 
 type Props = {
   open: boolean;
@@ -115,6 +116,27 @@ export default function TaskModal({
                 value={form.due_date || ""}
                 onChange={onChange}
               />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="task-recurrence">Repeat</label>
+            <div className="select-wrap">
+              <select
+                id="task-recurrence"
+                name="recurrence"
+                value={form.recurrence}
+                onChange={onChange}
+              >
+                {(Object.entries(recurrenceLabel) as [string, string][]).map(
+                  ([val, label]) => (
+                    <option key={val} value={val}>
+                      {label}
+                    </option>
+                  ),
+                )}
+              </select>
+              <span className="select-arrow">▾</span>
             </div>
           </div>
 

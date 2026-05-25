@@ -128,6 +128,7 @@ export function useDashboard(query: FetchTasksParams) {
       priority: task.priority,
       status: task.status,
       due_date: toDateTimeInputValue(task.due_date),
+      recurrence: task.recurrence?.frequency ?? "",
     });
     setFormError("");
     setModalOpen(true);
@@ -166,6 +167,7 @@ export function useDashboard(query: FetchTasksParams) {
           priority: form.priority,
           status: form.status,
           due_date: form.due_date ? new Date(form.due_date).toISOString() : null,
+          recurrence: form.recurrence ? { frequency: form.recurrence } : null,
         });
       } else {
         await createTask({
@@ -173,6 +175,7 @@ export function useDashboard(query: FetchTasksParams) {
           description: form.description.trim(),
           priority: form.priority,
           due_date: form.due_date ? new Date(form.due_date).toISOString() : undefined,
+          recurrence: form.recurrence ? { frequency: form.recurrence } : null,
         });
       }
 

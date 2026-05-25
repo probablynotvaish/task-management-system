@@ -1,5 +1,11 @@
 export type TaskStatus = "to_do" | "in_progress" | "completed" | "archived";
 export type TaskPriority = "low" | "medium" | "high";
+export type RecurrenceFrequency = "daily" | "weekdays" | "weekly" | "monthly" | "";
+
+export type RecurrenceRule = {
+  frequency: RecurrenceFrequency;
+  until?: string | null;
+};
 
 export type Task = {
   id: string;
@@ -9,6 +15,8 @@ export type Task = {
   priority: TaskPriority;
   due_date?: string | null;
   created_at: string;
+  recurrence?: RecurrenceRule | null;
+  recurrence_parent?: string | null;
 };
 
 export type PaginatedTasksResponse = {
@@ -25,6 +33,7 @@ export type TaskFormData = {
   priority: TaskPriority;
   status: TaskStatus;
   due_date: string;
+  recurrence: RecurrenceFrequency;
 };
 
 export type CreateTaskPayload = {
@@ -32,6 +41,7 @@ export type CreateTaskPayload = {
   description: string;
   priority: TaskPriority;
   due_date?: string;
+  recurrence?: { frequency: RecurrenceFrequency } | null;
 };
 
 export type UpdateTaskPayload = {
@@ -40,6 +50,7 @@ export type UpdateTaskPayload = {
   priority: TaskPriority;
   status: TaskStatus;
   due_date: string | null;
+  recurrence?: { frequency: RecurrenceFrequency } | null;
 };
 
 export const defaultTaskForm: TaskFormData = {
@@ -48,6 +59,7 @@ export const defaultTaskForm: TaskFormData = {
   priority: "medium",
   status: "to_do",
   due_date: "",
+  recurrence: "",
 };
 
 export const statusLabel: Record<TaskStatus, string> = {
@@ -56,3 +68,11 @@ export const statusLabel: Record<TaskStatus, string> = {
   completed: "Completed",
   archived: "Archived",
 };
+
+export const recurrenceLabel: Record<RecurrenceFrequency, string> = {
+  "":         "Does not repeat",
+  daily:      "Daily",
+  weekdays:   "Weekdays (Mon–Fri)",
+  weekly:     "Weekly",
+  monthly:    "Monthly",
+};

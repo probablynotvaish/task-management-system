@@ -61,7 +61,7 @@ func main() {
 	notifHandler := handlers.NewNotificationHandler(notifRepo)
 	aiHandler := handlers.NewAIHandler(taskService, userService)
 
-	notificationWorker := worker.NewNotifier(db, notifRepo)
+	notificationWorker := worker.NewNotifier(db, notifRepo, worker.NewRecurrenceWorker(taskRepo))
 	notificationWorker.Start()
 
 	mux := http.NewServeMux()

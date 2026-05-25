@@ -161,7 +161,7 @@ func geminiTools() []geminiTool {
 				},
 				{
 					Name:        "create_task",
-					Description: "Create a new task for the user.",
+					Description: "Create a new task for the user. Supports recurring tasks.",
 					Parameters: map[string]any{
 						"type": "object",
 						"properties": map[string]any{
@@ -180,7 +180,12 @@ func geminiTools() []geminiTool {
 							},
 							"due_date": map[string]any{
 								"type":        "string",
-								"description": "Optional due date in RFC3339 format (e.g. 2025-01-31T23:59:59Z)",
+								"description": "Optional due date in RFC3339 format (e.g. 2025-01-31T23:59:59Z). For recurring weekday tasks set to the next matching weekday.",
+							},
+							"recurrence": map[string]any{
+								"type":        "string",
+								"description": "How often the task repeats. Omit for one-time tasks. Use 'daily' (every day), 'weekdays' (Mon-Fri), 'weekly' (every 7 days), or 'monthly' (same day each month).",
+								"enum":        []string{"daily", "weekdays", "weekly", "monthly"},
 							},
 						},
 						"required": []string{"title"},
@@ -249,7 +254,7 @@ Today's date and time is: %s
 
 You help users manage their tasks through natural conversation. You can:
 - List and search tasks
-- Create new tasks
+- Create new tasks (one-time or recurring)
 - Update existing tasks (title, description, status, priority, due date)
 - Archive tasks
 - Provide summaries and insights about their task workload
@@ -263,7 +268,8 @@ IMPORTANT RULES:
 6. Task statuses: "to_do" (Pending), "in_progress" (In Progress), "completed" (Completed), "archived" (Archived).
 7. Never make up task IDs — always fetch them first using list_tasks.
 8. Format task lists as clean bullet points with title, priority, and due date when available.
-9. If the user asks something unrelated to tasks, politely redirect them.`, now)
+9. If the user asks something unrelated to tasks, politely redirect them.
+10. RECURRING TASKS: If the user says something like "every day", "every Friday", "every week", "every weekday", or "every month", set the recurrence field when calling create_task. Map phrases to: 'daily' (every day), 'weekdays' (Mon-Fri), 'weekly' (every week / every [weekday]), 'monthly' (every month). Also set due_date to the next upcoming occurrence.`, now)
 }
 
 // callGemini sends a request to the Gemini API and returns the response.
@@ -375,6 +381,9 @@ func (h *AIHandler) executeTool(ctx context.Context, userID bson.ObjectID, fnCal
 			if t.DueDate != nil {
 				td["due_date"] = t.DueDate.Format(time.RFC3339)
 			}
+			if t.Recurrence != nil && t.Recurrence.Frequency != "" {
+				td["recurrence"] = string(t.Recurrence.Frequency)
+			}
 			tasksData = append(tasksData, td)
 		}
 		return map[string]any{
@@ -421,13 +430,22 @@ func (h *AIHandler) executeTool(ctx context.Context, userID bson.ObjectID, fnCal
 				dto.DueDate = &t
 			}
 		}
+		if freq := getString("recurrence"); freq != "" {
+			dto.Recurrence = &models.RecurrenceRule{
+				Frequency: models.RecurrenceFrequency(freq),
+			}
+		}
 		task, err := h.taskService.CreateTask(ctx, userID, dto)
 		if err != nil {
 			return map[string]any{"error": err.Error()}, nil, nil
 		}
+		recurSuffix := ""
+		if task.Recurrence != nil && task.Recurrence.Frequency != "" {
+			recurSuffix = fmt.Sprintf(" (repeats %s)", task.Recurrence.Frequency)
+		}
 		action := &ActionTaken{
 			Type:    "create",
-			Summary: fmt.Sprintf("Created task: \"%s\" [%s priority]", task.Title, task.Priority),
+			Summary: fmt.Sprintf("Created task: \"%s\" [%s priority]%s", task.Title, task.Priority, recurSuffix),
 		}
 		return map[string]any{"success": true, "task_id": task.ID.Hex(), "title": task.Title}, action, nil
 

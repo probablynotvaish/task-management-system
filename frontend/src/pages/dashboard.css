@@ -1011,3 +1011,25 @@ body {
   text-decoration: line-through;
   color: var(--text-muted);
 }
+
+/* ─── Recurrence Badge ──────────────────────────────────────────────────────── */
+.recurrence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 3px 10px 3px 7px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.09);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  color: #6366f1;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  width: fit-content;
+}
+
+.recurrence-icon {
+  font-size: 0.78rem;
+  line-height: 1;
+}

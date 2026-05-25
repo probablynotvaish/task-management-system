@@ -14,27 +14,36 @@ import (
 )
 
 type Notifier struct {
-	db        *mongo.Database
-	notifRepo repository.NotificationRepository
-	cron      *cron.Cron
+	db               *mongo.Database
+	notifRepo        repository.NotificationRepository
+	recurrenceWorker *RecurrenceWorker
+	cron             *cron.Cron
 }
 
-func NewNotifier(db *mongo.Database, notifRepo repository.NotificationRepository) *Notifier {
+func NewNotifier(db *mongo.Database, notifRepo repository.NotificationRepository, recurrenceWorker *RecurrenceWorker) *Notifier {
 	return &Notifier{
-		db:        db,
-		notifRepo: notifRepo,
-		cron:      cron.New(),
+		db:               db,
+		notifRepo:        notifRepo,
+		recurrenceWorker: recurrenceWorker,
+		cron:             cron.New(),
 	}
 }
 
 func (n *Notifier) Start() {
 	_, err := n.cron.AddFunc("* * * * *", n.processRealTimeReminders)
 	if err != nil {
-		slog.Error("failed to schedule cron job", "error", err)
+		slog.Error("failed to schedule reminder cron job", "error", err)
 		return
 	}
+
+	_, err = n.cron.AddFunc("0 * * * *", n.recurrenceWorker.Process)
+	if err != nil {
+		slog.Error("failed to schedule recurrence cron job", "error", err)
+		return
+	}
+
 	n.cron.Start()
-	slog.Info("Real-time notification worker started (runs every minute)")
+	slog.Info("Workers started: reminder (every minute), recurrence (every hour)")
 }
 
 func (n *Notifier) processRealTimeReminders() {
