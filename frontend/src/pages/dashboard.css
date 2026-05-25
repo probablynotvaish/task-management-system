@@ -33,24 +33,24 @@
 }
 
 [data-theme="dark"] {
-  --bg-page:        #0f172a;
-  --bg-surface:     #1e293b;
-  --bg-hover:       #263348;
-  --bg-input:       #0f172a;
-  --bg-input-hover: #1a2540;
-  --bg-select:      #334155;
-  --bg-form-input:  #0f172a;
-  --bg-muted:       #334155;
+  --bg-page:        #18181b; /* IDE dark background */
+  --bg-surface:     #202024; /* Sidebar, cards, topbar panels */
+  --bg-hover:       #2d2d35; /* Hover states */
+  --bg-input:       #121214; /* Deep grey for input fields */
+  --bg-input-hover: #18181b;
+  --bg-select:      #2d2d34;
+  --bg-form-input:  #121214;
+  --bg-muted:       #27272a;
 
-  --text-primary:   #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-subtle:    #64748b;
-  --text-muted:     #64748b;
-  --text-label:     #cbd5e1;
+  --text-primary:   #f3f4f6; /* High contrast white */
+  --text-secondary: #a1a1aa; /* Zinc secondary text */
+  --text-subtle:    #71717a;
+  --text-muted:     #52525b;
+  --text-label:     #d4d4d8;
 
-  --border:         #475569;
-  --border-subtle:  #475569;
-  --border-light:   #3b4f66;
+  --border:         #2e2e34; /* Crisp dark grey borders */
+  --border-subtle:  #2e2e34;
+  --border-light:   #25252b;
 
   --accent:         #818cf8;
   --accent-border:   rgba(129, 140, 248, 0.4);
@@ -58,9 +58,9 @@
   --accent-glow-md:  rgba(129, 140, 248, 0.15);
 
   --btn-dark-bg:    #818cf8;
-  --btn-dark-color: #0f172a;
+  --btn-dark-color: #18181b;
 
-  --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────────── */
