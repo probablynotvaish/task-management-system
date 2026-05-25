@@ -160,7 +160,11 @@ export default function ChatWidget({ onTasksChanged }: ChatWidgetProps) {
             </div>
             <div className="chat-header-info">
               <h4>Planora AI</h4>
-              <span>You can make 20 requests per day. Requests left: {requestsLeft}</span>
+              <span>
+                {requestsLeft <= 0
+                  ? "AI chat bot limit reached"
+                  : `You can make 20 requests per day. Requests left: ${requestsLeft}`}
+              </span>
             </div>
             <button className="chat-close-btn" onClick={clearAndClose} aria-label="Close">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -239,7 +243,7 @@ export default function ChatWidget({ onTasksChanged }: ChatWidgetProps) {
               id="chat-input"
               className="chat-textarea"
               rows={1}
-              placeholder={requestsLeft <= 0 ? "Limit reached. Try again tomorrow." : "Ask me anything about your tasks…"}
+              placeholder={requestsLeft <= 0 ? "AI chat bot limit reached" : "Ask me anything about your tasks…"}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}

@@ -565,7 +565,7 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 
 	if user.AIRequestsToday >= 20 {
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{
-			"error": "You can make 20 requests per day. Requests left: 0",
+			"error": "AI chat bot limit reached",
 		})
 		return
 	}
@@ -620,7 +620,7 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 			errStr := err.Error()
 			if strings.Contains(errStr, "QuotaFailure") || strings.Contains(errStr, "quota") || strings.Contains(errStr, "429") {
 				writeJSON(w, http.StatusTooManyRequests, map[string]string{
-					"error": "You can make 20 requests per day. Requests left: 0",
+					"error": "AI chat bot limit reached",
 				})
 				return
 			}
