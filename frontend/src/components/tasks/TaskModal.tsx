@@ -119,7 +119,7 @@ export default function TaskModal({
             </div>
           </div>
 
-          <div className="form-group">
+          {/* <div className="form-group">
             <label htmlFor="task-recurrence">Repeat</label>
             <div className="select-wrap">
               <select
@@ -138,7 +138,7 @@ export default function TaskModal({
               </select>
               <span className="select-arrow">▾</span>
             </div>
-          </div>
+          </div> */}
 
           {formError && <p className="form-error">{formError}</p>}
         </div>
