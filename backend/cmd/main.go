@@ -32,6 +32,26 @@ func allowedOrigins() []string {
 	return origins
 }
 
+// @title Task Management System API
+// @version 1.0
+// @description This is the backend API server for the Task Management System.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /
+// @query.collection.format multi
+
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+// @description Type "Bearer <your-jwt-token>" to authenticate.
 func main() {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn("could not load .env file, using system environment", "error", err)

@@ -551,6 +551,20 @@ func (h *AIHandler) executeTool(ctx context.Context, userID bson.ObjectID, fnCal
 // HTTP handler
 // ──────────────────────────────────────────────
 
+// Chat godoc
+// @Summary Send message to AI assistant
+// @Description Send a chat message to the Gemini AI assistant along with chat history. The AI can execute tools (e.g. create, update, delete, list tasks) on behalf of the user.
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param request body ChatRequest true "Chat request body"
+// @Success 200 {object} ChatResponse
+// @Failure 400 {object} map[string]string "error: invalid request body or message is required"
+// @Failure 401 {object} map[string]string "error: unauthorized"
+// @Failure 429 {object} map[string]string "error: daily request limit exceeded"
+// @Failure 500 {object} map[string]string "error: internal server error"
+// @Security Bearer
+// @Router /api/ai/chat [post]
 func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
@@ -692,7 +706,16 @@ func (h *AIHandler) Chat(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetQuota returns the remaining and total requests today for the current user.
+// GetQuota godoc
+// @Summary Get user daily AI quota
+// @Description Returns the user's remaining and total allowed daily requests for the AI assistant.
+// @Tags AI
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Returns requests_left and total_requests"
+// @Failure 401 {object} map[string]string "error: unauthorized"
+// @Failure 500 {object} map[string]string "error: failed to retrieve user quota"
+// @Security Bearer
+// @Router /api/ai/quota [get]
 func (h *AIHandler) GetQuota(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {

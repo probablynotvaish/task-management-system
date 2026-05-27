@@ -1,0 +1,716 @@
+basePath: /
+definitions:
+  handlers.ActionTaken:
+    properties:
+      summary:
+        type: string
+      type:
+        type: string
+    type: object
+  handlers.ChatHistoryMessage:
+    properties:
+      content:
+        type: string
+      role:
+        description: '"user" | "model"'
+        type: string
+    type: object
+  handlers.ChatRequest:
+    properties:
+      history:
+        items:
+          $ref: '#/definitions/handlers.ChatHistoryMessage'
+        type: array
+      message:
+        type: string
+    type: object
+  handlers.ChatResponse:
+    properties:
+      actions_taken:
+        items:
+          $ref: '#/definitions/handlers.ActionTaken'
+        type: array
+      reply:
+        type: string
+      requests_left:
+        type: integer
+    type: object
+  handlers.loginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  handlers.signupRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  handlers.tokenExchangeRequest:
+    properties:
+      code:
+        type: string
+    type: object
+  models.Notification:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      is_read:
+        type: boolean
+      message:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.PaginatedResponse:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      tasks:
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  models.RecurrenceFrequency:
+    enum:
+    - ""
+    - daily
+    - weekdays
+    - weekly
+    - monthly
+    type: string
+    x-enum-varnames:
+    - RecurrenceNone
+    - RecurrenceDaily
+    - RecurrenceWeekdays
+    - RecurrenceWeekly
+    - RecurrenceMonthly
+  models.RecurrenceRule:
+    properties:
+      frequency:
+        $ref: '#/definitions/models.RecurrenceFrequency'
+      until:
+        description: Until is an optional end-date for the recurrence; nil means repeat
+          forever.
+        type: string
+    type: object
+  models.Task:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      due_date:
+        type: string
+      id:
+        type: string
+      priority:
+        $ref: '#/definitions/models.TaskPriority'
+      recurrence:
+        allOf:
+        - $ref: '#/definitions/models.RecurrenceRule'
+        description: Recurrence holds the repeat rule, if this is a recurring task.
+      recurrence_parent:
+        description: RecurrenceParent is the ID of the original (parent) recurring
+          task, set on child occurrences.
+        type: string
+      reminder_sent:
+        type: boolean
+      status:
+        $ref: '#/definitions/models.TaskStatus'
+      title:
+        type: string
+      userID:
+        type: string
+    type: object
+  models.TaskDTO:
+    properties:
+      description:
+        type: string
+      due_date:
+        type: string
+      priority:
+        $ref: '#/definitions/models.TaskPriority'
+      recurrence:
+        $ref: '#/definitions/models.RecurrenceRule'
+      title:
+        type: string
+    type: object
+  models.TaskPriority:
+    enum:
+    - low
+    - medium
+    - high
+    type: string
+    x-enum-varnames:
+    - PriorityLow
+    - PriorityMedium
+    - PriorityHigh
+  models.TaskStatus:
+    enum:
+    - to_do
+    - in_progress
+    - completed
+    - archived
+    type: string
+    x-enum-varnames:
+    - StatusToDo
+    - StatusInProgress
+    - StatusCompleted
+    - StatusArchived
+  models.User:
+    properties:
+      ai_last_request_date:
+        type: string
+      ai_requests_today:
+        type: integer
+      created_at:
+        type: string
+      email:
+        type: string
+      google_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  service.AuthResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is the backend API server for the Task Management System.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Task Management System API
+  version: "1.0"
+paths:
+  /api/ai/chat:
+    post:
+      consumes:
+      - application/json
+      description: Send a chat message to the Gemini AI assistant along with chat
+        history. The AI can execute tools (e.g. create, update, delete, list tasks)
+        on behalf of the user.
+      parameters:
+      - description: Chat request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.ChatResponse'
+        "400":
+          description: 'error: invalid request body or message is required'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 'error: unauthorized'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: 'error: daily request limit exceeded'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 'error: internal server error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Send message to AI assistant
+      tags:
+      - AI
+  /api/ai/quota:
+    get:
+      description: Returns the user's remaining and total allowed daily requests for
+        the AI assistant.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns requests_left and total_requests
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 'error: unauthorized'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 'error: failed to retrieve user quota'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get user daily AI quota
+      tags:
+      - AI
+  /api/auth/google:
+    get:
+      description: Redirects the user to Google OAuth2 consent page.
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to Google OAuth
+          schema:
+            type: string
+      summary: Initiate Google OAuth2 login
+      tags:
+      - Auth
+  /api/auth/google/callback:
+    get:
+      description: Callback endpoint for Google OAuth2. Validates state, exchanges
+        code for Google info, and redirects to frontend with an exchange code.
+      parameters:
+      - description: OAuth2 authorization code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: OAuth2 state parameter
+        in: query
+        name: state
+        required: true
+        type: string
+      responses:
+        "307":
+          description: Redirect to frontend
+          schema:
+            type: string
+      summary: Google OAuth2 callback
+      tags:
+      - Auth
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with email and password and return a JWT token.
+      parameters:
+      - description: Login request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.AuthResponse'
+        "400":
+          description: 'error: invalid request body'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 'error: invalid email or password'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Log in a user
+      tags:
+      - Auth
+  /api/auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with name, email, and password.
+      parameters:
+      - description: Signup request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.signupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/service.AuthResponse'
+        "400":
+          description: 'error: invalid request body or signup failed'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Auth
+  /api/auth/token:
+    post:
+      consumes:
+      - application/json
+      description: Redeems a short-lived opaque code (issued by GoogleCallback) for
+        the real JWT. The code is single-use and expires after 60 seconds.
+      parameters:
+      - description: Exchange code body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.tokenExchangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Returns JWT token as json {token: <JWT>}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: missing or invalid code'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 'error: invalid or expired code'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Exchange temporary code for JWT
+      tags:
+      - Auth
+  /api/me:
+    get:
+      consumes:
+      - application/json
+      description: Get the profile details of the currently authenticated user from
+        the JWT token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns id, email, and name of the user
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 'error: not authenticated'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get current user profile
+      tags:
+      - Auth
+  /api/notifications:
+    get:
+      description: Retrieve all unread notifications for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Notification'
+            type: array
+        "401":
+          description: 'error: unauthorized'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to fetch notifications
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: List unread user notifications
+      tags:
+      - Notifications
+  /api/notifications/{id}/read:
+    put:
+      description: Update the notification status to read.
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'status: success'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid notification ID or ID is required
+          schema:
+            type: string
+        "500":
+          description: Failed to update notification
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Mark a notification as read
+      tags:
+      - Notifications
+  /api/tasks:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of tasks for the authenticated user, supporting
+        filtering, sorting, pagination, and search.
+      parameters:
+      - description: Filter tasks by status (e.g. to_do, in_progress, completed, archived)
+        in: query
+        name: status
+        type: string
+      - description: Filter tasks by priority (low, medium, high)
+        in: query
+        name: priority
+        type: string
+      - description: Search query to match task title/description
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Field to sort by (e.g. due_date, priority, created_at)
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Sorting direction: asc or desc'
+        in: query
+        name: sort_dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PaginatedResponse'
+        "401":
+          description: 'error: unauthorized'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 'error: failed to fetch tasks'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: List user tasks
+      tags:
+      - Tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task for the authenticated user.
+      parameters:
+      - description: Task DTO body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.TaskDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: 'error: invalid request body or create task failed'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 'error: unauthorized'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a new task
+      tags:
+      - Tasks
+  /api/tasks/{id}:
+    delete:
+      description: Delete a task by ID for the authenticated user.
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: task deleted successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: invalid ID format or ID is required'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 'error: unauthorized'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: 'error: task not found'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 'error: failed to delete task'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a task
+      tags:
+      - Tasks
+    patch:
+      consumes:
+      - application/json
+      description: Update an existing task's fields for the authenticated user by
+        ID.
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Task'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: 'error: invalid request body or ID format'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 'error: unauthorized'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: 'error: task not found'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 'error: failed to update task'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update an existing task
+      tags:
+      - Tasks
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer <your-jwt-token>" to authenticate.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

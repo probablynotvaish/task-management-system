@@ -23,6 +23,24 @@ func NewTaskHandler(service *service.TaskService) *TaskHandler {
 	return &TaskHandler{service: service}
 }
 
+// GetTasks godoc
+// @Summary List user tasks
+// @Description Retrieve a list of tasks for the authenticated user, supporting filtering, sorting, pagination, and search.
+// @Tags Tasks
+// @Accept json
+// @Produce json
+// @Param status query string false "Filter tasks by status (e.g. to_do, in_progress, completed, archived)"
+// @Param priority query string false "Filter tasks by priority (low, medium, high)"
+// @Param search query string false "Search query to match task title/description"
+// @Param page query integer false "Page number"
+// @Param page_size query integer false "Number of items per page"
+// @Param sort_by query string false "Field to sort by (e.g. due_date, priority, created_at)"
+// @Param sort_dir query string false "Sorting direction: asc or desc"
+// @Success 200 {object} models.PaginatedResponse
+// @Failure 401 {object} map[string]string "error: unauthorized"
+// @Failure 500 {object} map[string]string "error: failed to fetch tasks"
+// @Security Bearer
+// @Router /api/tasks [get]
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
@@ -60,6 +78,18 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 
+// CreateTask godoc
+// @Summary Create a new task
+// @Description Create a new task for the authenticated user.
+// @Tags Tasks
+// @Accept json
+// @Produce json
+// @Param request body models.TaskDTO true "Task DTO body"
+// @Success 201 {object} models.Task
+// @Failure 400 {object} map[string]string "error: invalid request body or create task failed"
+// @Failure 401 {object} map[string]string "error: unauthorized"
+// @Security Bearer
+// @Router /api/tasks [post]
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
@@ -83,6 +113,21 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, task)
 }
 
+// UpdateTask godoc
+// @Summary Update an existing task
+// @Description Update an existing task's fields for the authenticated user by ID.
+// @Tags Tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Param request body models.Task true "Task fields to update"
+// @Success 200 {object} models.Task
+// @Failure 400 {object} map[string]string "error: invalid request body or ID format"
+// @Failure 401 {object} map[string]string "error: unauthorized"
+// @Failure 404 {object} map[string]string "error: task not found"
+// @Failure 500 {object} map[string]string "error: failed to update task"
+// @Security Bearer
+// @Router /api/tasks/{id} [patch]
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
@@ -128,6 +173,19 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, task)
 }
 
+// DeleteTask godoc
+// @Summary Delete a task
+// @Description Delete a task by ID for the authenticated user.
+// @Tags Tasks
+// @Produce json
+// @Param id path string true "Task ID"
+// @Success 200 {object} map[string]string "message: task deleted successfully"
+// @Failure 400 {object} map[string]string "error: invalid ID format or ID is required"
+// @Failure 401 {object} map[string]string "error: unauthorized"
+// @Failure 404 {object} map[string]string "error: task not found"
+// @Failure 500 {object} map[string]string "error: failed to delete task"
+// @Security Bearer
+// @Router /api/tasks/{id} [delete]
 func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {

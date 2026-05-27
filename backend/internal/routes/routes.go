@@ -3,8 +3,10 @@ package routes
 import (
 	"net/http"
 
+	_ "github.com/probablynotvaish/task-management-system/backend/docs"
 	"github.com/probablynotvaish/task-management-system/backend/internal/handlers"
 	"github.com/probablynotvaish/task-management-system/backend/internal/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func RegisterRoutes(
@@ -36,4 +38,9 @@ func RegisterRoutes(
 	// AI chat route
 	mux.Handle("POST /api/ai/chat", middleware.Auth(http.HandlerFunc(aiHandler.Chat)))
 	mux.Handle("GET /api/ai/quota", middleware.Auth(http.HandlerFunc(aiHandler.GetQuota)))
+
+	// Swagger documentation route
+	mux.Handle("GET /swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 }

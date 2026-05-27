@@ -35,6 +35,16 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+// Signup godoc
+// @Summary Register a new user
+// @Description Register a new user with name, email, and password.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body signupRequest true "Signup request body"
+// @Success 201 {object} service.AuthResponse
+// @Failure 400 {object} map[string]string "error: invalid request body or signup failed"
+// @Router /api/auth/signup [post]
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	var req signupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -52,6 +62,17 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, result)
 }
 
+// Login godoc
+// @Summary Log in a user
+// @Description Authenticate a user with email and password and return a JWT token.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body loginRequest true "Login request body"
+// @Success 200 {object} service.AuthResponse
+// @Failure 400 {object} map[string]string "error: invalid request body"
+// @Failure 401 {object} map[string]string "error: invalid email or password"
+// @Router /api/auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -69,9 +90,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 
-// GetMe returns the currently authenticated user's basic profile derived
-// from JWT claims. It is used by the OAuth callback to populate localStorage.user
-// without an extra DB query, since user_id and email are already in the token.
+// GetMe godoc
+// @Summary Get current user profile
+// @Description Get the profile details of the currently authenticated user from the JWT token.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string "Returns id, email, and name of the user"
+// @Failure 401 {object} map[string]string "error: not authenticated"
+// @Security Bearer
+// @Router /api/me [get]
 func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserID(r.Context())
 	if !ok {
@@ -109,6 +137,13 @@ func generateState() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+// GoogleLogin godoc
+// @Summary Initiate Google OAuth2 login
+// @Description Redirects the user to Google OAuth2 consent page.
+// @Tags Auth
+// @Produce json
+// @Success 307 {string} string "Redirect to Google OAuth"
+// @Router /api/auth/google [get]
 func (h *AuthHandler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 	state, err := generateState()
 	if err != nil {
@@ -136,6 +171,14 @@ type googleUserInfo struct {
 	Name  string `json:"name"`
 }
 
+// GoogleCallback godoc
+// @Summary Google OAuth2 callback
+// @Description Callback endpoint for Google OAuth2. Validates state, exchanges code for Google info, and redirects to frontend with an exchange code.
+// @Tags Auth
+// @Param code query string true "OAuth2 authorization code"
+// @Param state query string true "OAuth2 state parameter"
+// @Success 307 {string} string "Redirect to frontend"
+// @Router /api/auth/google/callback [get]
 func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
@@ -201,16 +244,23 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
-// TokenExchange redeems a short-lived opaque code (issued by GoogleCallback)
-// for the real JWT. The code is single-use and expires after 60 seconds.
-//
-// POST /api/auth/token
-// Body: { "code": "<opaque code>" }
-// Response: { "token": "<JWT>" }  |  { "error": "..." } on failure
+type tokenExchangeRequest struct {
+	Code string `json:"code"`
+}
+
+// TokenExchange godoc
+// @Summary Exchange temporary code for JWT
+// @Description Redeems a short-lived opaque code (issued by GoogleCallback) for the real JWT. The code is single-use and expires after 60 seconds.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body tokenExchangeRequest true "Exchange code body"
+// @Success 200 {object} map[string]string "Returns JWT token as json {token: <JWT>}"
+// @Failure 400 {object} map[string]string "error: missing or invalid code"
+// @Failure 401 {object} map[string]string "error: invalid or expired code"
+// @Router /api/auth/token [post]
 func (h *AuthHandler) TokenExchange(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Code string `json:"code"`
-	}
+	var body tokenExchangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Code == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing or invalid code"})
 		return
